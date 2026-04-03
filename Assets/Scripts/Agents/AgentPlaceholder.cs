@@ -6,7 +6,7 @@ using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 
 
-public class AgentPlaceholder : MonoBehaviour
+public class AgentPlaceholder : Agent
 {
     // Start is called before the first frame update
     void Start()
@@ -20,12 +20,12 @@ public class AgentPlaceholder : MonoBehaviour
         
     }
 
-    public  void CollectObservations(VectorSensor sensor)
+    public override  void CollectObservations(VectorSensor sensor)
     {
         sensor.AddObservation(0f);
     }
 
-    public void OnActionReceived(ActionBuffers actions)
+    public override void OnActionReceived(ActionBuffers actions)
     {
         // Do nothing
     }
