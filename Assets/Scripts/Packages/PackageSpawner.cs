@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class PackageSpawner : MonoBehaviour
 {
-    // ── Configuration ───────────────────────────────────────────────
+    // ── Configuration ──────────────────────────────────────────────
     [Header("Spawn Settings")]
     [Tooltip("Average arrivals per minute (λ). Default 30 = one every 2s on average.")]
     [SerializeField] private float _arrivalsPerMinute = 30f;
@@ -79,6 +79,8 @@ public class PackageSpawner : MonoBehaviour
             _prefab.AddComponent<Rigidbody>();
         if (_prefab.GetComponent<Package>() == null)
             _prefab.AddComponent<Package>();
+        if (_prefab.GetComponent<PackageConveyor>() == null)
+            _prefab.AddComponent<PackageConveyor>();
 
         // Pre-allocate pool
         for (int i = 0; i < _poolSize; i++)

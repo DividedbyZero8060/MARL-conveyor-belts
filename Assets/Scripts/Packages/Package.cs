@@ -35,6 +35,7 @@ public class Package : MonoBehaviour
         _rb.drag = 1.0f;
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
         _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        _rb.constraints = RigidbodyConstraints.FreezeRotation;
     }
 
     /// <summary>
