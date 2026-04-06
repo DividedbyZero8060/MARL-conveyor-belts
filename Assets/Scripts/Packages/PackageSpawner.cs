@@ -116,12 +116,16 @@ public class PackageSpawner : MonoBehaviour
         {
             if (_pool[i].gameObject.activeSelf)
             {
+                Rigidbody rb = _pool[i].GetComponent<Rigidbody>();
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
                 _pool[i].ReturnToPool();
             }
         }
 
         TotalSpawned = 0;
         _nextSpawnTime = Time.fixedTime + SamplePoissonInterval();
+        
     }
 
     // ── Spawning ────────────────────────────────────────────────────

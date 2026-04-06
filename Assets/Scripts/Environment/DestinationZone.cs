@@ -92,4 +92,13 @@ public class DestinationZone : MonoBehaviour
 
         pkg.ReturnToPool();
     }
+
+    /// <summary>
+    /// Reassigns this zone's accepted label.  Called by EnvironmentManager
+    /// during per-episode destination shuffling.
+    /// </summary>
+    public void SetAcceptedLabel(DestinationLabel label)
+    {
+        _acceptedLabel = label;
+    }
 }
