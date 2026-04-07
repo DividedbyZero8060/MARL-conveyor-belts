@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Large Crate
   destinationLabel: 2
-  dimensions: 0.8
+  dimensions: 0.6
   mass: 8
   colour: {r: 1, g: 0.44275072, b: 0, a: 1}
