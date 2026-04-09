@@ -40,7 +40,21 @@ public class EnvironmentManager : MonoBehaviour
     [Tooltip("The package spawner whose pool is reset between episodes.")]
     [SerializeField] private PackageSpawner _packageSpawner;
 
+    [Header("Observation Mode")]
+    [Tooltip("If true, agents observe 34 floats (no peer-agent features). If false, 38 floats. Used by SortingAgent.")]
+    [SerializeField] private bool _partialObservability = false;
+
+    [Header("Agent Group")]
+    [Tooltip("The cooperative agent group. Its episode is ended atomically during environment reset.")]
+    [SerializeField] private SortingAgentGroup _agentGroup;
+
     // ── Counters ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Whether agents should use the partial-observability observation layout (34 floats).
+    /// False = full observability (38 floats). Used by SortingAgent.CollectObservations.
+    /// </summary>
+    public bool PartialObservability => _partialObservability;
     public int CorrectSorts { get; private set; }
     public int IncorrectSorts { get; private set; }
     public int MissedPackages { get; private set; }
@@ -121,10 +135,13 @@ public class EnvironmentManager : MonoBehaviour
         return _branchDestinations[branchIndex];
     }
 
+
+
     /// <summary>
     /// Full episode reset: zero counters, pool all packages, retract all gates,
     /// shuffle destinations, fire OnEpisodeReset.
     /// </summary>
+    [ContextMenu("Reset Episode")]
     public void ResetEpisode()
     {
         CorrectSorts = 0;
@@ -140,6 +157,11 @@ public class EnvironmentManager : MonoBehaviour
         ShuffleDestinations();
 
         OnEpisodeReset?.Invoke();
+
+        if (_agentGroup != null)
+        {
+            _agentGroup.EndEpisodeForAll();
+        }
     }
 
     // ── Event handlers ──────────────────────────────────────────────
