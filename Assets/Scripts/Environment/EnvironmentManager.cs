@@ -44,6 +44,10 @@ public class EnvironmentManager : MonoBehaviour
     [Tooltip("If true, agents observe 34 floats (no peer-agent features). If false, 38 floats. Used by SortingAgent.")]
     [SerializeField] private bool _partialObservability = false;
 
+    [Header("Agent Group")]
+    [Tooltip("The cooperative agent group. Its episode is ended atomically during environment reset.")]
+    [SerializeField] private SortingAgentGroup _agentGroup;
+
     // ── Counters ────────────────────────────────────────────────────
 
     /// <summary>
@@ -153,6 +157,11 @@ public class EnvironmentManager : MonoBehaviour
         ShuffleDestinations();
 
         OnEpisodeReset?.Invoke();
+
+        if (_agentGroup != null)
+        {
+            _agentGroup.EndEpisodeForAll();
+        }
     }
 
     // ── Event handlers ──────────────────────────────────────────────
