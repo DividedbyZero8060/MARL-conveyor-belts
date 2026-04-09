@@ -134,6 +134,9 @@ public partial class SortingAgent : Agent
 
         // Push belt forward into the detector once.
         _packageDetector.SetBeltForward(_beltForward);
+
+        // detect discrete vs continuous action mode from BehaviorParameters.
+        DetectActionMode();
     }
 
     private void Start()
@@ -199,15 +202,9 @@ public partial class SortingAgent : Agent
 
     
 
-    public override void OnActionReceived(ActionBuffers actions)
-    {
-        // STUB: real action handling lands in Step 09 (dual action space).
-    }
+    
 
-    public override void Heuristic(in ActionBuffers actionsOut)
-    {
-        // STUB: Q/W/E key bindings land in Step 09.
-    }
+    
 
     // ================================================================
     // Internal helpers exposed to the partial-class file in 4c
