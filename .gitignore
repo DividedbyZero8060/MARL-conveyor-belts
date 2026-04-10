@@ -97,3 +97,19 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+/[Rr]esults/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv_marl/
+.venv/
+
+# PyTorch checkpoints (in case any leak outside /results/)
+*.pt
+*.pth
+
+# TensorBoard event files (in case any leak outside /results/)
+events.out.tfevents.*
