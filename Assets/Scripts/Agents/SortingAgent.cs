@@ -58,6 +58,9 @@ public partial class SortingAgent : Agent
     // in 4c so peers reading it via NearestPackageDistance get a consistent value.
     private float _cachedNearestPackageDistance = 1f;
 
+    // Per-episode activation telemetry (consumed by DebugOverlay at episode end).
+    private int _activationCount;      // times OnActionReceived decided to activate the gate
+    private int _decisionCount;         // total OnActionReceived calls this episode
     // ================================================================
     // Public read-only properties for peer agents (full-obs mode, 4c)
     // ================================================================
@@ -172,6 +175,8 @@ public partial class SortingAgent : Agent
         _overlappingPackages.Clear();
         _cachedNearestPackageDistance = 1f;
         if (_packageDetector != null) _packageDetector.ResetState();
+        _activationCount = 0;
+        _decisionCount = 0;
     }
 
     // ================================================================
@@ -217,6 +222,21 @@ public partial class SortingAgent : Agent
     internal void SetCachedNearestPackageDistance(float normalisedDistance)
     {
         _cachedNearestPackageDistance = normalisedDistance;
+    }
+
+    /// <summary>
+    /// Consumes and resets the per-episode gate activation counters.
+    /// Returns the activation rate: activations / decisions, in [0, 1].
+    /// Called by DebugOverlay during HandleEpisodeEnded.
+    /// </summary>
+    public float ConsumeAndResetActivationRate()
+    {
+        float rate = _decisionCount > 0
+            ? (float)_activationCount / _decisionCount
+            : 0f;
+        _activationCount = 0;
+        _decisionCount = 0;
+        return rate;
     }
 
     /// <summary>4c reads this directly to drive PackageDetector.Refresh().</summary>

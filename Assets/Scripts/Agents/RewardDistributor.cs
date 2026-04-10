@@ -36,6 +36,18 @@ public class RewardDistributor : MonoBehaviour
     [Tooltip("All DestinationZones in the scene, including the fallthrough zone at the trunk end.")]
     [SerializeField] private DestinationZone[] _destinationZones = new DestinationZone[4];
 
+    // Per-branch correct sort counter, indexed by DiverterGate.BranchIndex.
+    // Reset on episode reset. Consumed by DebugOverlay for CounterfactualCredit.
+    private readonly int[] _correctSortsByBranch = new int[3];
+
+    [Tooltip("Branch index for each DestinationZone in _destinationZones, in the same order. " +
+             "For fallthrough zones, use -1. Used to attribute correct sorts per branch.")]
+    [SerializeField] private int[] _zoneBranchIndices = new int[4];
+
+    // Captured-closure handlers for per-branch correct sort subscriptions.
+    // Stored here so OnDestroy can unsubscribe them by reference.
+    private readonly List<System.Action<Package>> _correctSortHandlers = new List<System.Action<Package>>();
+
     // Cumulative event counters, reset per episode. Exposed read-only for
     // the Step 13 debug overlay. These are NOT rewards — just event tallies.
     public int CorrectSortEvents { get; private set; }
@@ -72,24 +84,33 @@ public class RewardDistributor : MonoBehaviour
 
     private void Start()
     {
-        // Subscribe to all destination zones.
+        Debug.Assert(_zoneBranchIndices != null && _zoneBranchIndices.Length == _destinationZones.Length,
+            "[RewardDistributor] _zoneBranchIndices must have same length as _destinationZones.", this);
+
         for (int i = 0; i < _destinationZones.Length; i++)
         {
             DestinationZone zone = _destinationZones[i];
-            if (zone == null) continue;
+            if (zone == null)
+            {
+                _correctSortHandlers.Add(null); // preserve index alignment
+                continue;
+            }
 
             if (zone.IsFallthrough)
             {
                 zone.OnMissedPackage += HandleMissedPackage;
+                _correctSortHandlers.Add(null);
             }
             else
             {
-                zone.OnCorrectSort += HandleCorrectSort;
+                int capturedBranchIndex = _zoneBranchIndices[i];
+                System.Action<Package> handler = (pkg) => HandleCorrectSortForBranch(pkg, capturedBranchIndex);
+                zone.OnCorrectSort += handler;
                 zone.OnIncorrectSort += HandleIncorrectSort;
+                _correctSortHandlers.Add(handler);
             }
         }
 
-        // Subscribe to episode reset to clear counters.
         if (EnvironmentManager.Instance != null)
         {
             EnvironmentManager.Instance.OnEpisodeReset += HandleEpisodeReset;
@@ -113,7 +134,10 @@ public class RewardDistributor : MonoBehaviour
             }
             else
             {
-                zone.OnCorrectSort -= HandleCorrectSort;
+                if (i < _correctSortHandlers.Count && _correctSortHandlers[i] != null)
+                {
+                    zone.OnCorrectSort -= _correctSortHandlers[i];
+                }
                 zone.OnIncorrectSort -= HandleIncorrectSort;
             }
         }
@@ -128,11 +152,26 @@ public class RewardDistributor : MonoBehaviour
     // Event handlers — distribute shared reward
     // ================================================================
 
-    private void HandleCorrectSort(Package pkg)
+    private void HandleCorrectSortForBranch(Package pkg, int branchIndex)
     {
         CorrectSortEvents++;
+        if (branchIndex >= 0 && branchIndex < _correctSortsByBranch.Length)
+        {
+            _correctSortsByBranch[branchIndex]++;
+        }
         DistributeReward(_correctSortReward);
+    }
 
+
+    /// <summary>
+    /// Number of correct sort events attributed to the given branch this episode.
+    /// Used by DebugOverlay for the Agent{N}/CounterfactualCredit metric.
+    /// Returns 0 for invalid branch indices.
+    /// </summary>
+    public int GetCorrectSortsForBranch(int branchIndex)
+    {
+        if (branchIndex < 0 || branchIndex >= _correctSortsByBranch.Length) return 0;
+        return _correctSortsByBranch[branchIndex];
     }
 
     private void HandleIncorrectSort(Package pkg)
@@ -161,10 +200,13 @@ public class RewardDistributor : MonoBehaviour
 
     private void HandleEpisodeReset()
     {
-        
         CorrectSortEvents = 0;
         IncorrectSortEvents = 0;
         MissedPackageEvents = 0;
+        for (int i = 0; i < _correctSortsByBranch.Length; i++)
+        {
+            _correctSortsByBranch[i] = 0;
+        }
     }
 
 

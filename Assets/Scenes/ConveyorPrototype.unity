@@ -3455,6 +3455,65 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 73.5, z: 0}
+--- !u!1 &1756149903
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1756149905}
+  - component: {fileID: 1756149904}
+  m_Layer: 0
+  m_Name: DebugOverlay
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1756149904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1756149903}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b89530441a2d0df428fb76522dd50ff1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _environmentManager: {fileID: 1264870246}
+  _rewardDistributor: {fileID: 1831708009}
+  _branchTrackers:
+  - {fileID: 756474184}
+  - {fileID: 2017744079}
+  - {fileID: 165184119}
+  _agents:
+  - {fileID: 1075217947}
+  - {fileID: 1052898309}
+  - {fileID: 1544991375}
+  _packageSpawner: {fileID: 41728468}
+  _panelPosition: {x: 10, y: 10}
+  _panelWidth: 360
+  _showPanel: 1
+  _tintPackages: 1
+--- !u!4 &1756149905
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1756149903}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1831708008
 GameObject:
   m_ObjectHideFlags: 0
@@ -3496,6 +3555,7 @@ MonoBehaviour:
   - {fileID: 2090273504}
   - {fileID: 693208749}
   - {fileID: 971486433}
+  _zoneBranchIndices: 000000000100000002000000ffffffff
 --- !u!4 &1831708010
 Transform:
   m_ObjectHideFlags: 0
@@ -4713,6 +4773,7 @@ SceneRoots:
   - {fileID: 1264870247}
   - {fileID: 1831708010}
   - {fileID: 757305633}
+  - {fileID: 1756149905}
   - {fileID: 1075217950}
   - {fileID: 1052898312}
   - {fileID: 1544991378}

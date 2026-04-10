@@ -78,6 +78,7 @@ public partial class SortingAgent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
+        _decisionCount++;
         switch (_actionMode)
         {
             case ActionMode.Discrete:
@@ -89,6 +90,7 @@ public partial class SortingAgent
                     int gateAction = actions.DiscreteActions[0];
                     if (gateAction == 1)
                     {
+                        _activationCount++;
                         TryActivateGate();
                     }
                     break;
@@ -104,6 +106,7 @@ public partial class SortingAgent
                         && _gate != null
                         && _gate.CurrentState == GateState.Retracted)
                     {
+                        _activationCount++;
                         TryActivateGate();
                     }
                     break;
