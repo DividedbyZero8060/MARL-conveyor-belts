@@ -35,13 +35,8 @@ class MaddpgConfig:
     critic_lr: float = 5e-4
 
     # ---- Discount and target update ----
-    gamma: float = 0.99  # Discount factor
-    tau: float = 0.02  # Soft target update rate
-
-    # ---- TD3 / MATD3 stability improvements ----
-    policy_smoothing_noise_std: float = 0.1  # Gaussian noise std added to target actor output
-    policy_smoothing_clip: float = 0.2  # Symmetric clip on smoothing noise
-    actor_update_delay: int = 2  # Actor and target nets update every N critic updates
+    gamma: float = 0.99            # Discount factor
+    tau: float = 0.02              # Soft target update rate
 
     # ---- Batch and buffer ----
     batch_size: int = 256

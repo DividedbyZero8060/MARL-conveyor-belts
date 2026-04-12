@@ -46,7 +46,7 @@ public class EnvironmentManager : MonoBehaviour
 
     [Header("Agent Group")]
     [Tooltip("The cooperative agent group. Its episode is ended atomically during environment reset.")]
-    [SerializeField] private SortingAgentGroup _agentGroup;
+    public SortingAgentGroup _agentGroup;
 
     // ── Counters ────────────────────────────────────────────────────
 

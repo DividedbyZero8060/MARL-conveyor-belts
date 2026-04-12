@@ -81,6 +81,7 @@ public partial class SortingAgent : Agent
             {
                 case GateState.Retracted: return 0f;
                 case GateState.Deployed: return 1f;
+                case GateState.Committed:
                 case GateState.Deploying:
                 case GateState.Retracting: return 0.5f;
                 default: return 0f;

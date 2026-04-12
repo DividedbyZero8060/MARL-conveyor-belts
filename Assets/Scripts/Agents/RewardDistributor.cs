@@ -190,6 +190,20 @@ public class RewardDistributor : MonoBehaviour
 
     private void DistributeReward(float rewardPerAgent)
     {
+        // Compute the full team reward (rewardPerAgent is already divided by 3
+        // for the per-agent value, so multiply back to get the team total).
+        float teamReward = rewardPerAgent * _agents.Length;
+
+        // Hand it to MA-POCA's cooperative value decomposition via the group.
+        if (EnvironmentManager.Instance != null
+            && EnvironmentManager.Instance._agentGroup != null
+            && EnvironmentManager.Instance._agentGroup.Group != null)
+        {
+            EnvironmentManager.Instance._agentGroup.Group.AddGroupReward(teamReward);
+        }
+
+        // Also distribute the per-agent reward via AddReward. This is what
+        // MADDPG reads via decision_steps.reward, and is harmless for MA-POCA.
         for (int i = 0; i < _agents.Length; i++)
         {
             SortingAgent agent = _agents[i];

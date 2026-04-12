@@ -40,6 +40,14 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT))
 
+# Suppress mlagents_envs StatsSideChannel "unknown channel" warnings.
+# This channel carries C# StatsRecorder.Add() calls (used by DebugOverlay
+# for our custom telemetry). MaddpgTrainer doesn't register it, so the
+# trainer discards those messages. Wiring the channel is a deferred task
+# (see results/first_runs.md). For now, silence the noise.
+import logging
+logging.getLogger("mlagents_envs.side_channel.side_channel_manager").setLevel(logging.ERROR)
+
 from training.maddpg.config import (
     MaddpgConfig,
     DEFAULT_CONFIG,

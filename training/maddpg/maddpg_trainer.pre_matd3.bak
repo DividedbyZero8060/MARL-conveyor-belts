@@ -108,49 +108,36 @@ class MaddpgTrainer:
         self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         # --- Per-agent networks and optimizers
-        # MATD3: each agent gets twin critics. Bootstrap target uses min(target_critic1, target_critic2).
         self._actors: List[Actor] = []
         self._critics: List[Critic] = []
-        self._critics2: List[Critic] = []
         self._target_actors: List[Actor] = []
         self._target_critics: List[Critic] = []
-        self._target_critics2: List[Critic] = []
         self._actor_optims: List[optim.Adam] = []
         self._critic_optims: List[optim.Adam] = []
-        self._critic2_optims: List[optim.Adam] = []
-        # MATD3 delayed actor update counter
-        self._update_count: int = 0
 
         critic_input_dim = expected_critic_input_dim(obs_size, self._action_size)
 
         for _ in range(config.num_agents):
-            # Online networks (actor + twin critics)
+            # Online networks
             actor = Actor(obs_size, self._action_size, config).to(self._device)
             critic = Critic(critic_input_dim, config).to(self._device)
-            critic2 = Critic(critic_input_dim, config).to(self._device)
 
             # Target networks — start as exact copies of the online networks
             target_actor = Actor(obs_size, self._action_size, config).to(self._device)
             target_critic = Critic(critic_input_dim, config).to(self._device)
-            target_critic2 = Critic(critic_input_dim, config).to(self._device)
             hard_update(target_actor, actor)
             hard_update(target_critic, critic)
-            hard_update(target_critic2, critic2)
 
             # Optimizers
             actor_optim = optim.Adam(actor.parameters(), lr=config.actor_lr)
             critic_optim = optim.Adam(critic.parameters(), lr=config.critic_lr)
-            critic2_optim = optim.Adam(critic2.parameters(), lr=config.critic_lr)
 
             self._actors.append(actor)
             self._critics.append(critic)
-            self._critics2.append(critic2)
             self._target_actors.append(target_actor)
             self._target_critics.append(target_critic)
-            self._target_critics2.append(target_critic2)
             self._actor_optims.append(actor_optim)
             self._critic_optims.append(critic_optim)
-            self._critic2_optims.append(critic2_optim)
 
         # --- Replay buffer (seeded independently for deterministic sampling)
         self._buffer = ReplayBuffer(
@@ -252,14 +239,10 @@ class MaddpgTrainer:
             },
             "actors": [a.state_dict() for a in self._actors],
             "critics": [c.state_dict() for c in self._critics],
-            "critics2": [c.state_dict() for c in self._critics2],
             "target_actors": [a.state_dict() for a in self._target_actors],
             "target_critics": [c.state_dict() for c in self._target_critics],
-            "target_critics2": [c.state_dict() for c in self._target_critics2],
             "actor_optims": [o.state_dict() for o in self._actor_optims],
             "critic_optims": [o.state_dict() for o in self._critic_optims],
-            "critic2_optims": [o.state_dict() for o in self._critic2_optims],
-            "update_count": self._update_count,
         }
         torch.save(state, path)
         print(f"[MaddpgTrainer] checkpoint saved: {path}")
@@ -294,16 +277,12 @@ class MaddpgTrainer:
         for i in range(self._config.num_agents):
             self._actors[i].load_state_dict(state["actors"][i])
             self._critics[i].load_state_dict(state["critics"][i])
-            self._critics2[i].load_state_dict(state["critics2"][i])
             self._target_actors[i].load_state_dict(state["target_actors"][i])
             self._target_critics[i].load_state_dict(state["target_critics"][i])
-            self._target_critics2[i].load_state_dict(state["target_critics2"][i])
             self._actor_optims[i].load_state_dict(state["actor_optims"][i])
             self._critic_optims[i].load_state_dict(state["critic_optims"][i])
-            self._critic2_optims[i].load_state_dict(state["critic2_optims"][i])
 
         self._env_step = state["env_step"]
-        self._update_count = state.get("update_count", 0)
         print(f"[MaddpgTrainer] checkpoint loaded from {path} at env_step={self._env_step}")
 
     # =================================================================
@@ -422,38 +401,20 @@ class MaddpgTrainer:
 
         batch = self._buffer.sample(self._config.batch_size)
 
-        obs = torch.from_numpy(batch.obs).to(self._device)
-        masked_actions = torch.from_numpy(batch.masked_actions).to(self._device)
-        rewards = torch.from_numpy(batch.rewards).to(self._device)
-        next_obs = torch.from_numpy(batch.next_obs).to(self._device)
-        dones = torch.from_numpy(batch.dones).to(self._device)
+        # Move batch to device. Replay buffer stores float32; torch defaults match.
+        obs = torch.from_numpy(batch.obs).to(self._device)                      # (B, N, obs_size)
+        masked_actions = torch.from_numpy(batch.masked_actions).to(self._device)  # (B, N, A)
+        rewards = torch.from_numpy(batch.rewards).to(self._device)              # (B, N)
+        next_obs = torch.from_numpy(batch.next_obs).to(self._device)            # (B, N, obs_size)
+        dones = torch.from_numpy(batch.dones).to(self._device)                  # (B, N)
 
         num_agents = self._config.num_agents
-        self._update_count += 1
-        do_actor_update = (self._update_count % self._config.actor_update_delay == 0)
 
-        # ===== Target actions with policy smoothing =====
+        # Precompute all target actor outputs for next_obs — shared across agents.
         with torch.no_grad():
             next_actions = torch.zeros_like(masked_actions)
             for i in range(num_agents):
-                a = self._target_actors[i](next_obs[:, i, :])
-                noise = torch.randn_like(a) * self._config.policy_smoothing_noise_std
-                noise = torch.clamp(
-                    noise,
-                    -self._config.policy_smoothing_clip,
-                    self._config.policy_smoothing_clip,
-                )
-                smoothed = torch.clamp(a + noise, 0.0, 1.0)
-                # Mirror the rollout masking: if next_obs's gate state is non-zero
-                # (Committed/Transit/Deployed), force action[0] to 0. Same rule as
-                # the Python masker in run() and the C# Activate() guard.
-                gate_state_next = next_obs[:, i, IDX_GATE_STATE]  # (B,)
-                gate_not_retracted = (gate_state_next != 0.0).float().unsqueeze(-1)  # (B, 1)
-                # action[0] is the gate action; other indices (if any) are message floats.
-                mask = torch.ones_like(smoothed)
-                mask[:, 0:1] = 1.0 - gate_not_retracted
-                smoothed = smoothed * mask
-                next_actions[:, i, :] = smoothed
+                next_actions[:, i, :] = self._target_actors[i](next_obs[:, i, :])
             next_critic_input = self._build_critic_input_batch(next_obs, next_actions)
 
         critic_losses = []
@@ -461,69 +422,56 @@ class MaddpgTrainer:
         mean_qs = []
 
         for i in range(num_agents):
-            # ===== Twin critic update with clipped double Q =====
+            # ===== Critic update =====
             with torch.no_grad():
-                target_q1 = self._target_critics[i](next_critic_input).squeeze(-1)
-                target_q2 = self._target_critics2[i](next_critic_input).squeeze(-1)
-                target_q_next = torch.min(target_q1, target_q2)
+                target_q_next = self._target_critics[i](next_critic_input).squeeze(-1)  # (B,)
                 target_q = (
-                        rewards[:, i]
-                        + self._config.gamma * (1.0 - dones[:, i]) * target_q_next
+                    rewards[:, i]
+                    + self._config.gamma * (1.0 - dones[:, i]) * target_q_next
                 )
 
             current_critic_input = self._build_critic_input_batch(obs, masked_actions)
+            current_q = self._critics[i](current_critic_input).squeeze(-1)  # (B,)
 
-            # Critic 1
-            current_q1 = self._critics[i](current_critic_input).squeeze(-1)
-            critic_loss1 = F.smooth_l1_loss(current_q1, target_q)
+            critic_loss = F.mse_loss(current_q, target_q)
             self._critic_optims[i].zero_grad()
-            critic_loss1.backward()
+            critic_loss.backward()
             torch.nn.utils.clip_grad_norm_(self._critics[i].parameters(), max_norm=1.0)
             self._critic_optims[i].step()
 
-            # Critic 2 — independent forward pass on the same input
-            current_q2 = self._critics2[i](current_critic_input).squeeze(-1)
-            critic_loss2 = F.smooth_l1_loss(current_q2, target_q)
-            self._critic2_optims[i].zero_grad()
-            critic_loss2.backward()
-            torch.nn.utils.clip_grad_norm_(self._critics2[i].parameters(), max_norm=1.0)
-            self._critic2_optims[i].step()
+            critic_losses.append(critic_loss.item())
+            mean_qs.append(current_q.mean().item())
 
-            critic_losses.append(0.5 * (critic_loss1.item() + critic_loss2.item()))
-            mean_qs.append(current_q1.mean().item())
+            # ===== Actor update =====
+            # Rebuild action tensor: agent i uses current actor output (differentiable),
+            # other agents use masked actions from buffer (no grad).
+            my_action = self._actors[i](obs[:, i, :])  # (B, A), requires grad
+            action_slices = []
+            for j in range(num_agents):
+                if j == i:
+                    action_slices.append(my_action)
+                else:
+                    action_slices.append(masked_actions[:, j, :])
+            actions_for_actor = torch.stack(action_slices, dim=1)  # (B, N, A)
 
-            # ===== Delayed actor and target updates =====
-            if do_actor_update:
-                my_action = self._actors[i](obs[:, i, :])
-                action_slices = []
-                for j in range(num_agents):
-                    if j == i:
-                        action_slices.append(my_action)
-                    else:
-                        action_slices.append(masked_actions[:, j, :])
-                actions_for_actor = torch.stack(action_slices, dim=1)
+            actor_critic_input = self._build_critic_input_batch(obs, actions_for_actor)
+            actor_loss = -self._critics[i](actor_critic_input).mean()
+            self._actor_optims[i].zero_grad()
+            actor_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self._actors[i].parameters(), max_norm=1.0)
+            self._actor_optims[i].step()
 
-                actor_critic_input = self._build_critic_input_batch(obs, actions_for_actor)
-                # Use critic 1 only for the actor gradient (TD3 convention).
-                actor_loss = -self._critics[i](actor_critic_input).mean()
-                self._actor_optims[i].zero_grad()
-                actor_loss.backward()
-                torch.nn.utils.clip_grad_norm_(self._actors[i].parameters(), max_norm=1.0)
-                self._actor_optims[i].step()
+            actor_losses.append(actor_loss.item())
 
-                actor_losses.append(actor_loss.item())
+            # ===== Soft update target networks =====
+            soft_update(self._target_actors[i], self._actors[i], self._config.tau)
+            soft_update(self._target_critics[i], self._critics[i], self._config.tau)
 
-                soft_update(self._target_actors[i], self._actors[i], self._config.tau)
-                soft_update(self._target_critics[i], self._critics[i], self._config.tau)
-                soft_update(self._target_critics2[i], self._critics2[i], self._config.tau)
-
-        metrics = {
+        return {
             "critic_loss_mean": float(np.mean(critic_losses)),
+            "actor_loss_mean": float(np.mean(actor_losses)),
             "mean_q": float(np.mean(mean_qs)),
         }
-        if actor_losses:
-            metrics["actor_loss_mean"] = float(np.mean(actor_losses))
-        return metrics
 
 
     # =================================================================
@@ -817,12 +765,10 @@ if __name__ == "__main__":
     target_actor0_before = trainer._target_actors[0]._trunk[0].weight.data.clone()
     target_critic0_before = trainer._target_critics[0]._trunk[0].weight.data.clone()
 
-    ## ---- Run two updates so the delayed actor update fires at least once
+    # ---- Run one update
     losses = trainer._update()
     assert losses is not None, "_update returned None despite buffer being past warmup"
-    losses = trainer._update()
-    assert losses is not None
-    print(f"_update returned losses (after 2 updates): {losses}")
+    print(f"_update returned losses: {losses}")
 
     # ---- Losses are finite
     assert all(np.isfinite(v) for v in losses.values()), f"non-finite loss: {losses}"

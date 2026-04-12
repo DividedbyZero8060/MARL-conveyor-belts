@@ -27,6 +27,8 @@ public class PackageSpawner : MonoBehaviour
     [Tooltip("Empty transform marking the spawn position.")]
     [SerializeField] private Transform _spawnPoint;
 
+
+    [SerializeField] float _minimumInterval = 0f;
     // ── Pool ────────────────────────────────────────────────────────
     private readonly List<Package> _pool = new List<Package>();
     private GameObject _prefab;
@@ -166,6 +168,7 @@ public class PackageSpawner : MonoBehaviour
         // Inverse CDF of exponential: -ln(U) / λ, where U ~ Uniform(0,1)
         // Clamp U away from 0 to avoid ln(0) = -infinity
         float u = Random.Range(0.0001f, 1f);
-        return -Mathf.Log(u) / lambda;
+        float interval = -Mathf.Log(u) / lambda;
+        return Mathf.Max(interval, _minimumInterval);  // NEW: clamp to minimum
     }
 }
