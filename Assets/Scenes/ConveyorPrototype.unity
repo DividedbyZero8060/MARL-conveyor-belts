@@ -191,7 +191,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &106539648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2644,7 +2644,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 1
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -2774,7 +2774,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 1
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3154,6 +3154,116 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1837460984}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1251174652
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1251174654}
+  - component: {fileID: 1251174656}
+  - component: {fileID: 1251174653}
+  - component: {fileID: 1251174655}
+  m_Layer: 0
+  m_Name: CentralisedAgent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1251174653
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1251174652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d1c4e0b1822b495aa52bc52839ecb30, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_BrainParameters:
+    VectorObservationSize: 114
+    NumStackedVectorObservations: 1
+    m_ActionSpec:
+      m_NumContinuousActions: 0
+      BranchSizes: 020000000200000002000000
+    VectorActionSize: 020000000200000002000000
+    VectorActionDescriptions: []
+    VectorActionSpaceType: 0
+    hasUpgradedBrainParametersWithActionSpec: 1
+  m_Model: {fileID: 0}
+  m_InferenceDevice: 0
+  m_BehaviorType: 0
+  m_BehaviorName: CentralisedAgent
+  TeamId: 0
+  m_UseChildSensors: 1
+  m_UseChildActuators: 1
+  m_ObservableAttributeHandling: 0
+--- !u!4 &1251174654
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1251174652}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1251174655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1251174652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  DecisionPeriod: 3
+  TakeActionsBetweenDecisions: 0
+--- !u!114 &1251174656
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1251174652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 788fe610ffc3db84f854706fe8fd72a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentParameters:
+    maxStep: 0
+  hasUpgradedFromAgentParameters: 1
+  MaxStep: 0
+  _gates:
+  - {fileID: 1837460986}
+  - {fileID: 1087211201}
+  - {fileID: 966596094}
+  _packageDetectors:
+  - {fileID: 158153293}
+  - {fileID: 704496491}
+  - {fileID: 1287695959}
+  _branchTrackers:
+  - {fileID: 756474184}
+  - {fileID: 2017744079}
+  - {fileID: 165184119}
+  _branchAgents:
+  - {fileID: 1075217947}
+  - {fileID: 1052898309}
+  - {fileID: 1544991375}
 --- !u!1 &1264870245
 GameObject:
   m_ObjectHideFlags: 0
@@ -3607,7 +3717,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 1
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3717,6 +3827,57 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 81, z: 0}
+--- !u!1 &1644135913
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1644135915}
+  - component: {fileID: 1644135914}
+  m_Layer: 0
+  m_Name: CentralisedRewardDistributor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1644135914
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644135913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a007b5a24a48f5242bb2318cd729a2c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _centralisedAgent: {fileID: 1251174656}
+  _destinationZones:
+  - {fileID: 396064182}
+  - {fileID: 2090273504}
+  - {fileID: 693208749}
+  - {fileID: 971486433}
+  _zoneBranchIndices: 000000000100000002000000ffffffff
+--- !u!4 &1644135915
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644135913}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1756149903
 GameObject:
   m_ObjectHideFlags: 0
@@ -3747,7 +3908,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _environmentManager: {fileID: 1264870246}
-  _rewardDistributorSource: {fileID: 106539648}
+  _rewardDistributorSource: {fileID: 1831708009}
   _branchTrackers:
   - {fileID: 756474184}
   - {fileID: 2017744079}
@@ -3792,7 +3953,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1831708009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4355,7 +4516,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &2002696927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5092,7 +5253,9 @@ SceneRoots:
   - {fileID: 106539649}
   - {fileID: 757305633}
   - {fileID: 1756149905}
+  - {fileID: 1251174654}
   - {fileID: 1075217950}
   - {fileID: 1052898312}
   - {fileID: 1544991378}
   - {fileID: 2002696928}
+  - {fileID: 1644135915}

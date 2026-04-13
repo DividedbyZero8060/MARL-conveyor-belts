@@ -176,6 +176,7 @@ public class EnvironmentManager : MonoBehaviour
     // ── Internal ────────────────────────────────────────────────────
     private void EndEpisode()
     {
+       
         OnEpisodeEnded?.Invoke();
         ResetEpisode();
     }
