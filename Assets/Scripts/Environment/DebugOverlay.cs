@@ -42,8 +42,11 @@ public class DebugOverlay : MonoBehaviour
     [Tooltip("EnvironmentManager for episode state and destination mapping.")]
     [SerializeField] private EnvironmentManager _environmentManager;
 
-    [Tooltip("RewardDistributor for event counters and per-branch attribution.")]
-    [SerializeField] private RewardDistributor _rewardDistributor;
+    [Tooltip("Event counter source (RewardDistributor for cooperative runs, " +
+             "IndependentRewardDistributor for DQN runs). Wire whichever is " +
+             "currently active in the scene. Must implement IEventCounter.")]
+    [SerializeField] private MonoBehaviour _rewardDistributorSource;
+    private IEventCounter _rewardDistributor;
 
     [Tooltip("All three BranchTrackers in branch-index order.")]
     [SerializeField] private BranchTracker[] _branchTrackers = new BranchTracker[3];
@@ -90,7 +93,13 @@ public class DebugOverlay : MonoBehaviour
     private void Awake()
     {
         Debug.Assert(_environmentManager != null, "[DebugOverlay] _environmentManager not assigned.", this);
-        Debug.Assert(_rewardDistributor != null, "[DebugOverlay] _rewardDistributor not assigned.", this);
+        Debug.Assert(_rewardDistributorSource != null,
+            "[DebugOverlay] _rewardDistributorSource not assigned. Wire a component implementing IEventCounter.", this);
+
+        _rewardDistributor = _rewardDistributorSource as IEventCounter;
+        Debug.Assert(_rewardDistributor != null,
+            $"[DebugOverlay] '{_rewardDistributorSource.GetType().Name}' does not implement IEventCounter.", this);
+
         Debug.Assert(_branchTrackers != null && _branchTrackers.Length == 3,
             "[DebugOverlay] _branchTrackers must have exactly 3 entries.", this);
         Debug.Assert(_agents != null && _agents.Length == 3,

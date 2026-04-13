@@ -17,7 +17,7 @@ using UnityEngine;
 /// Python reads rewards via decision_steps.reward / terminal_steps.reward;
 /// there is no GetTeamReward() bridge method and there must not be one.
 /// </summary>
-public class RewardDistributor : MonoBehaviour
+public class RewardDistributor : MonoBehaviour, IEventCounter
 {
     [Header("Reward Values (per agent, after /3 team split)")]
     [Tooltip("Reward delivered to EACH agent on a correct sort. Workflow sacred number: +1/3 = 0.333.")]

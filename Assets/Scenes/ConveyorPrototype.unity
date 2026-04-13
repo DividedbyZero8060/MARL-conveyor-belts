@@ -175,6 +175,60 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &106539647
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 106539649}
+  - component: {fileID: 106539648}
+  m_Layer: 0
+  m_Name: IndependentRewardDistributor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &106539648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 106539647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80644f79611b82a43b3e7d4cd49ebd31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _agents:
+  - {fileID: 1075217947}
+  - {fileID: 1052898309}
+  - {fileID: 1544991375}
+  _destinationZones:
+  - {fileID: 396064182}
+  - {fileID: 2090273504}
+  - {fileID: 693208749}
+  - {fileID: 971486433}
+  _zoneBranchIndices: 000000000100000002000000ffffffff
+--- !u!4 &106539649
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 106539647}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &136085375
 GameObject:
   m_ObjectHideFlags: 0
@@ -2590,7 +2644,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -2720,7 +2774,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3130,7 +3184,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _episodeDuration: 60
-  _maxMissedPackages: 7
+  _maxMissedPackages: 10
   _branchZones:
   - {fileID: 396064182}
   - {fileID: 2090273504}
@@ -3553,7 +3607,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3693,7 +3747,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _environmentManager: {fileID: 1264870246}
-  _rewardDistributor: {fileID: 1831708009}
+  _rewardDistributorSource: {fileID: 106539648}
   _branchTrackers:
   - {fileID: 756474184}
   - {fileID: 2017744079}
@@ -3738,7 +3792,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1831708009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4301,7 +4355,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2002696927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4316,7 +4370,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _targetEpisodes: 100
   _outputPath: results/baseline_heuristic.csv
-  _useHeuristicAutomatic: 1
+  _useHeuristicAutomatic: 0
   _environmentManager: {fileID: 1264870246}
   _agents:
   - {fileID: 1075217947}
@@ -5035,6 +5089,7 @@ SceneRoots:
   - {fileID: 966596091}
   - {fileID: 1264870247}
   - {fileID: 1831708010}
+  - {fileID: 106539649}
   - {fileID: 757305633}
   - {fileID: 1756149905}
   - {fileID: 1075217950}
