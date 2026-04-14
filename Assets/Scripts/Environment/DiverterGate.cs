@@ -1,7 +1,11 @@
 ﻿using UnityEngine;
 
-/// <summary>Gate FSM states. Activate() is only valid in Retracted.</summary>
-public enum GateState { Retracted, Deploying, Deployed, Retracting }
+/// <summary>
+/// Gate FSM states. Activate() is only valid in Retracted.
+/// Committed is entered by Activate() and waits for a package to cross the
+/// CommitZoneTrigger before transitioning to Deploying.
+/// </summary>
+public enum GateState { Retracted, Committed, Deploying, Deployed, Retracting }
 
 /// <summary>
 /// Paddle gate with 4-state FSM: Retracted → Deploying → Deployed → Retracting → Retracted.
@@ -49,6 +53,19 @@ public class DiverterGate : MonoBehaviour
     [Tooltip("Maximum cooldown clamp (seconds). Also used to normalise remaining.")]
     [SerializeField] private float _maxCooldown = 1.0f;
 
+    // ── Pre-commit semantics (Option C) ─────────────────────────────
+    [Header("Pre-commit Trigger")]
+    [Tooltip("Trigger volume placed upstream of the paddle. When the gate is " +
+             "Committed and a Package enters this trigger, Deploying begins. " +
+             "Should sit ~(beltSpeed × transitionDuration) metres upstream " +
+             "so the deploy completes just as the package reaches the paddle.")]
+    [SerializeField] private CommitZoneTrigger _commitZone;
+
+    [Tooltip("Maximum time to wait in Committed state before auto-cancelling. " +
+             "If no package crosses the commit zone within this window, the " +
+             "gate returns to Retracted with no cooldown applied.")]
+    [SerializeField] private float _commitTimeout = 3.0f;
+
     // ── Runtime state ───────────────────────────────────────────────
     private Rigidbody _rb;
     private GateState _state = GateState.Retracted;
@@ -73,12 +90,29 @@ public class DiverterGate : MonoBehaviour
         _rb = GetComponent<Rigidbody>();
         Debug.Assert(_rb.isKinematic,
             $"[DiverterGate] {name} Rigidbody must be Kinematic.");
+        Debug.Assert(_commitZone != null,
+            $"[DiverterGate] {name} _commitZone is not assigned. Pre-commit " +
+            $"semantics require a CommitZoneTrigger child placed upstream of the paddle.",
+            this);
 
         _retractedRot = Quaternion.Euler(_retractedEulerAngles);
         _deployedRot = Quaternion.Euler(_deployedEulerAngles);
         _rb.MoveRotation(transform.parent != null
             ? transform.parent.rotation * _retractedRot
             : _retractedRot);
+
+        if (_commitZone != null)
+        {
+            _commitZone.OnPackageEntered += HandleCommitZoneEntered;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (_commitZone != null)
+        {
+            _commitZone.OnPackageEntered -= HandleCommitZoneEntered;
+        }
     }
 
     private void FixedUpdate()
@@ -90,6 +124,19 @@ public class DiverterGate : MonoBehaviour
 
         switch (_state)
         {
+            case GateState.Committed:
+                // Waiting for a package to cross the commit zone trigger.
+                // HandleCommitZoneEntered() advances us to Deploying when one does.
+                // Auto-cancel after _commitTimeout if no package arrives.
+                _phaseElapsed += dt;
+                if (_phaseElapsed >= _commitTimeout)
+                {
+                    _state = GateState.Retracted;
+                    _phaseElapsed = 0f;
+                    // No StartCooldown() — nothing physical happened, so no cooldown owed.
+                }
+                break;
+
             case GateState.Deploying:
                 _phaseElapsed += dt;
                 AnimateRotation(_retractedRot, _deployedRot, _phaseElapsed / _transitionDuration);
@@ -122,9 +169,25 @@ public class DiverterGate : MonoBehaviour
     public bool Activate()
     {
         if (!IsActionable) return false;
-        _state = GateState.Deploying;
+        // Pre-commit semantics: enter Committed and wait for a package to
+        // cross the commit zone. Deploying starts only when the trigger fires.
+        _state = GateState.Committed;
         _phaseElapsed = 0f;
         return true;
+    }
+
+    /// <summary>
+    /// Called by the CommitZoneTrigger child via its event when a Package
+    /// physically enters the commit zone. Only advances to Deploying if we
+    /// are currently Committed; otherwise the event is ignored (a package
+    /// might cross the zone naturally during cooldown or while a previous
+    /// commit is still in transit).
+    /// </summary>
+    private void HandleCommitZoneEntered(Package pkg)
+    {
+        if (_state != GateState.Committed) return;
+        _state = GateState.Deploying;
+        _phaseElapsed = 0f;
     }
 
     /// <summary>

@@ -33,6 +33,28 @@ public partial class SortingAgent
     private BehaviorParameters _behaviorParameters;
 
     /// <summary>
+    /// When true, Heuristic() uses the rule-based automatic controller
+    /// (perfect-information sort) instead of Q/W/E keyboard input. Set by
+    /// EvaluationRunner before the heuristic baseline run, or manually in
+    /// the Inspector for ad-hoc testing. The agent's BehaviorType must be
+    /// Heuristic Only for this to take effect.
+    /// </summary>
+    public bool UseAutomaticHeuristic { get; set; } = false;
+
+    /// <summary>
+    /// Distance threshold (normalised, in [0,1]) below which the automatic
+    /// heuristic considers a slot-0 package "close enough" to commit. The
+    /// PackageDetector emits distances normalised by detection range (15m),
+    /// so 0.05 corresponds to ~0.75m physical distance. With Option C
+    /// pre-commit semantics, the agent only needs to fire early enough that
+    /// the package will reach the commit zone soon — exact timing is
+    /// physics-driven, so this threshold is forgiving.
+    /// </summary>
+    [Tooltip("Slot-0 distance threshold for automatic heuristic activation. " +
+             "Normalised, [0,1]. With Option C, this can be lenient (~0.20).")]
+    public float AutomaticHeuristicDistanceThreshold = 0.20f;
+
+    /// <summary>
     /// Threshold above which a continuous gate action is treated as "activate".
     /// Applied ONLY in C#; the raw continuous value is what the Python critic sees.
     /// </summary>
@@ -78,6 +100,7 @@ public partial class SortingAgent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
+        _decisionCount++;
         switch (_actionMode)
         {
             case ActionMode.Discrete:
@@ -89,6 +112,7 @@ public partial class SortingAgent
                     int gateAction = actions.DiscreteActions[0];
                     if (gateAction == 1)
                     {
+                        _activationCount++;
                         TryActivateGate();
                     }
                     break;
@@ -104,6 +128,7 @@ public partial class SortingAgent
                         && _gate != null
                         && _gate.CurrentState == GateState.Retracted)
                     {
+                        _activationCount++;
                         TryActivateGate();
                     }
                     break;
@@ -138,27 +163,32 @@ public partial class SortingAgent
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
-        // Branch index → key: 0=Q, 1=W, 2=E.
-        KeyCode myKey;
-        switch (_branchIndex)
-        {
-            case 0: myKey = KeyCode.Q; break;
-            case 1: myKey = KeyCode.W; break;
-            case 2: myKey = KeyCode.E; break;
-            default: myKey = KeyCode.None; break;
-        }
+        bool wantActivate;
 
-        // Use GetKey (held) not GetKeyDown so a held key survives across
-        // multiple decision intervals. Repeat activations during cooldown
-        // are harmless — DiverterGate.Activate() rejects them.
-        bool pressed = (myKey != KeyCode.None) && Input.GetKey(myKey);
+        if (UseAutomaticHeuristic)
+        {
+            wantActivate = ComputeAutomaticHeuristicActivation();
+        }
+        else
+        {
+            // Manual Q/W/E mode (existing behaviour).
+            KeyCode myKey;
+            switch (_branchIndex)
+            {
+                case 0: myKey = KeyCode.Q; break;
+                case 1: myKey = KeyCode.W; break;
+                case 2: myKey = KeyCode.E; break;
+                default: myKey = KeyCode.None; break;
+            }
+            wantActivate = (myKey != KeyCode.None) && Input.GetKey(myKey);
+        }
 
         if (_actionMode == ActionMode.Discrete)
         {
             ActionSegment<int> discreteOut = actionsOut.DiscreteActions;
             if (discreteOut.Length > 0)
             {
-                discreteOut[0] = pressed ? 1 : 0;
+                discreteOut[0] = wantActivate ? 1 : 0;
             }
         }
         else if (_actionMode == ActionMode.Continuous)
@@ -166,10 +196,71 @@ public partial class SortingAgent
             ActionSegment<float> continuousOut = actionsOut.ContinuousActions;
             if (continuousOut.Length > 0)
             {
-                continuousOut[0] = pressed ? 1f : 0f;
+                continuousOut[0] = wantActivate ? 1f : 0f;
             }
         }
         // Unknown mode: leave buffer at default (zeros).
+    }
+
+    /// <summary>
+    /// Rule-based perfect-information heuristic. Returns true if the agent
+    /// should activate its gate this decision step.
+    ///
+    /// Logic:
+    ///   1. If the gate is not actionable (animating or cooling down), do nothing.
+    ///   2. Read slot 0 from the agent's observation slots — closest detected package.
+    ///   3. If slot 0 is empty, do nothing.
+    ///   4. If slot 0's destination matches THIS branch's currently assigned
+    ///      destination AND slot 0's distance is below the threshold, activate.
+    ///   5. Otherwise, do nothing.
+    ///
+    /// This uses perfect information — the heuristic looks up the current
+    /// branch mapping via EnvironmentManager.GetDestinationForBranch and
+    /// reads the closest package's destination label directly. Trained
+    /// agents must learn the same mapping from observation only.
+    /// </summary>
+    private bool ComputeAutomaticHeuristicActivation()
+    {
+        if (_gate == null || !_gate.IsActionable) return false;
+
+        // Find the closest in-range package by querying the detector's
+        // overlapping list directly (same source the observation slots use).
+        if (_overlappingPackages == null || _overlappingPackages.Count == 0)
+            return false;
+
+        // The detector's WriteObservations sorts by upstream distance, but
+        // we don't have direct access to that ordering from here — instead,
+        // recompute using the same metric (dot product against belt forward).
+        Package closestPackage = null;
+        float closestDistance = float.MaxValue;
+        Vector3 agentPosition = transform.position;
+
+        for (int i = 0; i < _overlappingPackages.Count; i++)
+        {
+            Package pkg = _overlappingPackages[i];
+            if (pkg == null || !pkg.gameObject.activeInHierarchy) continue;
+            float dist = Vector3.Distance(agentPosition, pkg.transform.position);
+            if (dist < closestDistance)
+            {
+                closestDistance = dist;
+                closestPackage = pkg;
+            }
+        }
+
+        if (closestPackage == null) return false;
+
+        // Normalise distance the same way the detector does: divide by the
+        // detection range. PackageDetector uses 15m by convention.
+        float normalisedDistance = Mathf.Clamp01(closestDistance / 15f);
+        if (normalisedDistance > AutomaticHeuristicDistanceThreshold) return false;
+
+        // Look up THIS branch's currently assigned destination.
+        if (EnvironmentManager.Instance == null) return false;
+        DestinationLabel myDestination = EnvironmentManager.Instance
+            .GetDestinationForBranch(_branchIndex);
+
+        // Compare with the closest package's destination.
+        return closestPackage.DestinationLabel == myDestination;
     }
 
     /// <summary>
