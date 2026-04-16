@@ -681,8 +681,13 @@ class MaddpgTrainer:
 
                     self._env_step += 1
 
-                    # Gradient update (returns None until warmup reached)
-                    update_metrics = self._update()
+                    # Gradient update (returns None until warmup reached).
+                    # Gated by update_every_n_steps to control CPU cost
+                    # without reducing total experience collected.
+                    if self._env_step % self._config.update_every_n_steps == 0:
+                        update_metrics = self._update()
+                    else:
+                        update_metrics = None
 
                     # Periodic logging
                     if self._env_step - last_log_step >= self._config.summary_freq:
