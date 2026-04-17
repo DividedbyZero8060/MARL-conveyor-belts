@@ -243,6 +243,7 @@ public class CentralisedAgent : Agent
 
     public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask)
     {
+        
         // Mask each branch independently. When gate i is not Retracted,
         // its activate-action (index 1) is disabled so PPO cannot propose it.
         for (int branchIdx = 0; branchIdx < 3; branchIdx++)

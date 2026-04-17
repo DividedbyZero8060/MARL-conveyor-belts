@@ -59,7 +59,7 @@ class DqnConfig:
 
     # ---- Training schedule ----
     max_steps: int = 2_000_000
-    update_every_n_steps: int = 1
+    update_every_n_steps: int = 4
 
     # ---- Logging cadence (in environment steps) ----
     summary_freq: int = 5_000

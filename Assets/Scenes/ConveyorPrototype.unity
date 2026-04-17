@@ -151,7 +151,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f696534bca72854fb37813b04b568ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _arrivalsPerMinute: 7
+  _arrivalsPerMinute: 6
   _lateralOffsetMax: 0.1
   _poolSize: 40
   _packageTypes:
@@ -159,7 +159,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ee90b9ac4dee557439a2d728a5dbfe57, type: 2}
   - {fileID: 11400000, guid: b804116d748f87749893e5e909d521b6, type: 2}
   _spawnPoint: {fileID: 1893572057}
-  _minimumInterval: 1.5
+  _minimumInterval: 5
 --- !u!4 &41728469
 Transform:
   m_ObjectHideFlags: 0
@@ -169,7 +169,7 @@ Transform:
   m_GameObject: {fileID: 41728467}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.45, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -191,7 +191,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &106539648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2286,11 +2286,11 @@ MonoBehaviour:
   _branchIndex: 2
   _retractedEulerAngles: {x: 0, y: 0, z: 0}
   _deployedEulerAngles: {x: 0, y: 36, z: 0}
-  _transitionDuration: 0.4
+  _transitionDuration: 0.3
   _deployedHoldDuration: 0.6
   _baseCooldown: 0.5
   _minCooldown: 0.15
-  _maxCooldown: 0.5
+  _maxCooldown: 1
   _commitZone: {fileID: 1512468213}
   _commitTimeout: 3
 --- !u!1 &971486432
@@ -2644,7 +2644,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -2774,7 +2774,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -2930,11 +2930,11 @@ MonoBehaviour:
   _branchIndex: 1
   _retractedEulerAngles: {x: 0, y: 0, z: 0}
   _deployedEulerAngles: {x: 0, y: 34, z: 0}
-  _transitionDuration: 0.4
+  _transitionDuration: 0.3
   _deployedHoldDuration: 0.6
   _baseCooldown: 0.5
   _minCooldown: 0.15
-  _maxCooldown: 0.5
+  _maxCooldown: 1
   _commitZone: {fileID: 631826590}
   _commitTimeout: 3
 --- !u!1 &1163259083
@@ -3195,9 +3195,9 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
+  m_Model: {fileID: 5022602860645237092, guid: da3d79252267efd47bb348c117371873, type: 3}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 2
   m_BehaviorName: CentralisedAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3294,7 +3294,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _episodeDuration: 60
-  _maxMissedPackages: 10
+  _maxMissedPackages: 6
   _branchZones:
   - {fileID: 396064182}
   - {fileID: 2090273504}
@@ -3717,7 +3717,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3908,7 +3908,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _environmentManager: {fileID: 1264870246}
-  _rewardDistributorSource: {fileID: 1831708009}
+  _rewardDistributorSource: {fileID: 106539648}
   _branchTrackers:
   - {fileID: 756474184}
   - {fileID: 2017744079}
@@ -3953,7 +3953,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1831708009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4072,11 +4072,11 @@ MonoBehaviour:
   _branchIndex: 0
   _retractedEulerAngles: {x: 0, y: 0, z: 0}
   _deployedEulerAngles: {x: 0, y: 34, z: 0}
-  _transitionDuration: 0.4
+  _transitionDuration: 0.3
   _deployedHoldDuration: 0.6
   _baseCooldown: 0.5
   _minCooldown: 0.15
-  _maxCooldown: 0.5
+  _maxCooldown: 1
   _commitZone: {fileID: 1245412015}
   _commitTimeout: 3
 --- !u!65 &1837460987
@@ -4530,7 +4530,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetEpisodes: 100
-  _outputPath: results/baseline_heuristic.csv
+  _outputPath: results/eval_dqn_s42.csv
   _useHeuristicAutomatic: 0
   _environmentManager: {fileID: 1264870246}
   _agents:
