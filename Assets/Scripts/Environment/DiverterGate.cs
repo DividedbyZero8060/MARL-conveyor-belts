@@ -84,6 +84,12 @@ public class DiverterGate : MonoBehaviour
     /// <summary>True only when Retracted AND cooldown expired.</summary>
     public bool IsActionable => _state == GateState.Retracted && _cooldownRemaining <= 0f;
 
+    /// <summary>
+    /// Public accessor for the commit zone trigger. Used by RewardDistributor
+    /// for intent shaping subscriptions.
+    /// </summary>
+    public CommitZoneTrigger CommitZone => _commitZone;
+
     // ── Unity callbacks ─────────────────────────────────────────────
     private void Awake()
     {

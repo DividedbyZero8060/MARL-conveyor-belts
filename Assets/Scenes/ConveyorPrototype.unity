@@ -156,8 +156,8 @@ MonoBehaviour:
   _poolSize: 40
   _packageTypes:
   - {fileID: 11400000, guid: aad8db3b7e39bfa4d872f132f2d2d4b3, type: 2}
-  - {fileID: 11400000, guid: ee90b9ac4dee557439a2d728a5dbfe57, type: 2}
-  - {fileID: 11400000, guid: b804116d748f87749893e5e909d521b6, type: 2}
+  - {fileID: 11400000, guid: aad8db3b7e39bfa4d872f132f2d2d4b3, type: 2}
+  - {fileID: 11400000, guid: aad8db3b7e39bfa4d872f132f2d2d4b3, type: 2}
   _spawnPoint: {fileID: 1893572057}
   _minimumInterval: 5
 --- !u!4 &41728469
@@ -191,7 +191,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &106539648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3307,6 +3307,8 @@ MonoBehaviour:
   _packageSpawner: {fileID: 41728468}
   _partialObservability: 0
   _agentGroup: {fileID: 757305632}
+  _useCurriculum: 1
+  _curriculumPhase1Episodes: 9999
 --- !u!4 &1264870247
 Transform:
   m_ObjectHideFlags: 0
@@ -3908,7 +3910,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _environmentManager: {fileID: 1264870246}
-  _rewardDistributorSource: {fileID: 106539648}
+  _rewardDistributorSource: {fileID: 1831708009}
   _branchTrackers:
   - {fileID: 756474184}
   - {fileID: 2017744079}
@@ -3953,7 +3955,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1831708009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3966,9 +3968,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d58f379471f741f43ad95052d87522ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _correctSortReward: 0.33333334
-  _incorrectSortReward: -0.5
-  _missedPackageReward: -0.6666667
+  _useCounterfactualCredit: 0
+  _useIntentShaping: 0
+  _intentShapingMagnitude: 0.05
   _agents:
   - {fileID: 1075217947}
   - {fileID: 1052898309}
@@ -3979,6 +3981,10 @@ MonoBehaviour:
   - {fileID: 693208749}
   - {fileID: 971486433}
   _zoneBranchIndices: 000000000100000002000000ffffffff
+  _gates:
+  - {fileID: 1837460986}
+  - {fileID: 1087211201}
+  - {fileID: 966596094}
 --- !u!4 &1831708010
 Transform:
   m_ObjectHideFlags: 0
@@ -4516,7 +4522,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2002696927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4530,8 +4536,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetEpisodes: 100
-  _outputPath: results/eval_dqn_s42.csv
-  _useHeuristicAutomatic: 0
+  _outputPath: results/baseline_updated.csv
+  _useHeuristicAutomatic: 1
   _environmentManager: {fileID: 1264870246}
   _agents:
   - {fileID: 1075217947}
