@@ -59,7 +59,7 @@ class MaddpgConfig:
 
     # ---- Training schedule ----
     max_steps: int = 2_000_000
-    update_every_n_steps: int = 1      # Per-step updates after warmup
+    update_every_n_steps: int = 4      # Per-step updates after warmup
 
     # ---- Logging cadence (in environment steps) ----
     summary_freq: int = 5_000

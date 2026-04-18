@@ -1,12 +1,14 @@
-# MA-POCA training configuration for the cooperative sorting task.
+# Curriculum Stage 3 — three package types (full task).
+# Warm-started from Stage 2 checkpoint via mlagents-learn --initialize-from.
+# No warm-start target — this is the thesis Level 3 result.
 #
-# Behavior name MUST match BehaviorParameters.behaviorName on all three
-# SortingAgent GameObjects (currently "SortingAgent"). Parameter sharing
-# across the three agents is handled automatically by ML-Agents because
-# they share the same behavior name.
+# Scene config before running:
+#   PackageSpawner._packageTypes = [SmallParcel, MediumBox, LargeCrate]
+#   (all other toggles unchanged from Stages 1-2)
 #
-# Observation size (38 full / 34 partial) is inferred from the VectorSensor
-# at runtime; do NOT hardcode it here.
+# Expected outcome: primary research result. If > 33% (cold-start baseline),
+# curriculum warm-start helped. If <= 33%, entropy collapse dominates and the
+# null result is itself a thesis contribution.
 
 behaviors:
   SortingAgent:
@@ -32,7 +34,7 @@ behaviors:
         strength: 1.0
     keep_checkpoints: 5
     checkpoint_interval: 100000
-    max_steps: 2000000
+    max_steps: 1000000
     time_horizon: 64
     summary_freq: 5000
     threaded: false

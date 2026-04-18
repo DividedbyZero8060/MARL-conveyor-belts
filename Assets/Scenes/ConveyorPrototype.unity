@@ -151,15 +151,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f696534bca72854fb37813b04b568ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _arrivalsPerMinute: 7
+  _arrivalsPerMinute: 6
   _lateralOffsetMax: 0.1
   _poolSize: 40
   _packageTypes:
   - {fileID: 11400000, guid: aad8db3b7e39bfa4d872f132f2d2d4b3, type: 2}
   - {fileID: 11400000, guid: ee90b9ac4dee557439a2d728a5dbfe57, type: 2}
-  - {fileID: 11400000, guid: b804116d748f87749893e5e909d521b6, type: 2}
+  _useDeterministicAlternation: 0
   _spawnPoint: {fileID: 1893572057}
-  _minimumInterval: 1.5
+  _minimumInterval: 5
 --- !u!4 &41728469
 Transform:
   m_ObjectHideFlags: 0
@@ -169,7 +169,7 @@ Transform:
   m_GameObject: {fileID: 41728467}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.45, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -533,6 +533,7 @@ MonoBehaviour:
   _branchIndex: 2
   _pairedDestinationZone: {fileID: 693208749}
   _maxCapacity: 10
+  _logReconciliationEveryReset: 0
 --- !u!65 &165184120
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2118,6 +2119,7 @@ MonoBehaviour:
   _branchIndex: 0
   _pairedDestinationZone: {fileID: 396064182}
   _maxCapacity: 10
+  _logReconciliationEveryReset: 0
 --- !u!65 &756474185
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2286,11 +2288,11 @@ MonoBehaviour:
   _branchIndex: 2
   _retractedEulerAngles: {x: 0, y: 0, z: 0}
   _deployedEulerAngles: {x: 0, y: 36, z: 0}
-  _transitionDuration: 0.4
+  _transitionDuration: 0.3
   _deployedHoldDuration: 0.6
   _baseCooldown: 0.5
   _minCooldown: 0.15
-  _maxCooldown: 0.5
+  _maxCooldown: 1
   _commitZone: {fileID: 1512468213}
   _commitTimeout: 3
 --- !u!1 &971486432
@@ -2633,7 +2635,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 38
+    VectorObservationSize: 34
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
@@ -2644,7 +2646,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -2763,7 +2765,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 38
+    VectorObservationSize: 34
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
@@ -2774,7 +2776,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -2930,11 +2932,11 @@ MonoBehaviour:
   _branchIndex: 1
   _retractedEulerAngles: {x: 0, y: 0, z: 0}
   _deployedEulerAngles: {x: 0, y: 34, z: 0}
-  _transitionDuration: 0.4
+  _transitionDuration: 0.3
   _deployedHoldDuration: 0.6
   _baseCooldown: 0.5
   _minCooldown: 0.15
-  _maxCooldown: 0.5
+  _maxCooldown: 1
   _commitZone: {fileID: 631826590}
   _commitTimeout: 3
 --- !u!1 &1163259083
@@ -3195,9 +3197,9 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
+  m_Model: {fileID: 5022602860645237092, guid: da3d79252267efd47bb348c117371873, type: 3}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 2
   m_BehaviorName: CentralisedAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3305,8 +3307,10 @@ MonoBehaviour:
   - {fileID: 966596094}
   _fallthroughZone: {fileID: 971486433}
   _packageSpawner: {fileID: 41728468}
-  _partialObservability: 0
+  _partialObservability: 1
   _agentGroup: {fileID: 757305632}
+  _useCurriculum: 1
+  _curriculumPhase1Episodes: 9999
 --- !u!4 &1264870247
 Transform:
   m_ObjectHideFlags: 0
@@ -3706,7 +3710,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 38
+    VectorObservationSize: 34
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
@@ -3717,7 +3721,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 1
+  m_BehaviorType: 0
   m_BehaviorName: SortingAgent
   TeamId: 0
   m_UseChildSensors: 1
@@ -3966,9 +3970,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d58f379471f741f43ad95052d87522ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _correctSortReward: 0.33333334
-  _incorrectSortReward: -0.5
-  _missedPackageReward: -0.6666667
+  _useCounterfactualCredit: 0
+  _useIntentShaping: 0
+  _intentShapingMagnitude: 0.05
   _agents:
   - {fileID: 1075217947}
   - {fileID: 1052898309}
@@ -3979,6 +3983,22 @@ MonoBehaviour:
   - {fileID: 693208749}
   - {fileID: 971486433}
   _zoneBranchIndices: 000000000100000002000000ffffffff
+  _gates:
+  - {fileID: 1837460986}
+  - {fileID: 1087211201}
+  - {fileID: 966596094}
+  _useInterceptionPenalty: 0
+  _interceptionPenaltyMagnitude: 0.2
+  _useResponsibilityAttributedMiss: 1
+  _responsibleMissShare: -1.334
+  _nonResponsibleMissShare: -0.333
+  _usePotentialShaping: 0
+  _potentialGamma: 0.99
+  _potentialShapingCoefficient: 0.1
+  _branchTrackersForPotential:
+  - {fileID: 756474184}
+  - {fileID: 2017744079}
+  - {fileID: 165184119}
 --- !u!4 &1831708010
 Transform:
   m_ObjectHideFlags: 0
@@ -4072,11 +4092,11 @@ MonoBehaviour:
   _branchIndex: 0
   _retractedEulerAngles: {x: 0, y: 0, z: 0}
   _deployedEulerAngles: {x: 0, y: 34, z: 0}
-  _transitionDuration: 0.4
+  _transitionDuration: 0.3
   _deployedHoldDuration: 0.6
   _baseCooldown: 0.5
   _minCooldown: 0.15
-  _maxCooldown: 0.5
+  _maxCooldown: 1
   _commitZone: {fileID: 1245412015}
   _commitTimeout: 3
 --- !u!65 &1837460987
@@ -4516,7 +4536,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2002696927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4530,7 +4550,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetEpisodes: 100
-  _outputPath: results/baseline_heuristic.csv
+  _outputPath: results/baseline_updated_test.csv
   _useHeuristicAutomatic: 0
   _environmentManager: {fileID: 1264870246}
   _agents:
@@ -4600,6 +4620,7 @@ MonoBehaviour:
   _branchIndex: 1
   _pairedDestinationZone: {fileID: 2090273504}
   _maxCapacity: 10
+  _logReconciliationEveryReset: 0
 --- !u!65 &2017744080
 BoxCollider:
   m_ObjectHideFlags: 0

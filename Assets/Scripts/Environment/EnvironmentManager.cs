@@ -9,6 +9,15 @@ using UnityEngine;
 /// assigned to the 3 branch zones via DestinationZone.SetAcceptedLabel().
 /// Agents query <see cref="GetDestinationForBranch"/> to observe the mapping.
 ///
+/// CURRICULUM MODE (optional, controlled by _useCurriculum toggle):
+///   Phase 1 (episodes 0 to _curriculumPhase1Episodes): destination mapping
+///   is FROZEN to a single fixed permutation. Agents learn a flat lookup:
+///   "Gate i fires on package type k." No compositional inference required.
+///
+///   Phase 2 (_curriculumPhase1Episodes onward): normal per-episode shuffling
+///   resumes. Agents must now READ the destination-mapping observation to
+///   generalise across permutations.
+///
 /// Episode ends when either _episodeDuration elapses OR MissedPackages
 /// reaches _maxMissedPackages. On end, ResetEpisode() runs automatically.
 ///
@@ -48,6 +57,16 @@ public class EnvironmentManager : MonoBehaviour
     [Tooltip("The cooperative agent group. Its episode is ended atomically during environment reset.")]
     public SortingAgentGroup _agentGroup;
 
+    [Header("Curriculum")]
+    [Tooltip("If true, destination mapping is frozen during Phase 1 (first N episodes) " +
+             "and shuffled per-episode in Phase 2. Helps agents learn the firing reflex " +
+             "before requiring compositional inference over the destination observation.")]
+    [SerializeField] private bool _useCurriculum = false;
+
+    [Tooltip("Number of episodes in Phase 1 (fixed mapping). After this, " +
+             "normal per-episode shuffling resumes. ~800 episodes ≈ 800k steps.")]
+    [SerializeField] private int _curriculumPhase1Episodes = 800;
+
     // ── Counters ────────────────────────────────────────────────────
 
     /// <summary>
@@ -74,6 +93,9 @@ public class EnvironmentManager : MonoBehaviour
     private static readonly DestinationLabel[] AllLabels =
         { DestinationLabel.DestA, DestinationLabel.DestB, DestinationLabel.DestC };
 
+    // Curriculum: tracks whether Phase 1 fixed mapping has been set.
+    private bool _phase1MappingSet = false;
+
     // ── Unity callbacks ─────────────────────────────────────────────
     private void Awake()
     {
@@ -88,6 +110,11 @@ public class EnvironmentManager : MonoBehaviour
             "[EnvironmentManager] Requires fallthrough zone reference.");
         Debug.Assert(_packageSpawner != null,
             "[EnvironmentManager] Requires PackageSpawner reference.");
+
+        if (_useCurriculum)
+        {
+            Debug.Log($"[EnvironmentManager] CURRICULUM enabled: Phase 1 = {_curriculumPhase1Episodes} episodes (fixed mapping), then Phase 2 (shuffled).");
+        }
     }
 
     private void Start()
@@ -154,7 +181,31 @@ public class EnvironmentManager : MonoBehaviour
         for (int i = 0; i < _branchGates.Length; i++)
             _branchGates[i].ResetToRetracted();
 
-        ShuffleDestinations();
+        // Curriculum-aware destination assignment
+        if (_useCurriculum && EpisodeIndex <= _curriculumPhase1Episodes)
+        {
+            // Phase 1: fixed mapping. Set once on first episode, keep for all Phase 1 episodes.
+            if (!_phase1MappingSet)
+            {
+                // Deterministic identity mapping: Branch0→DestA, Branch1→DestB, Branch2→DestC
+                _branchDestinations[0] = DestinationLabel.DestA;
+                _branchDestinations[1] = DestinationLabel.DestB;
+                _branchDestinations[2] = DestinationLabel.DestC;
+                ApplyDestinationMapping();
+                _phase1MappingSet = true;
+                Debug.Log("[EnvironmentManager] Curriculum Phase 1: fixed mapping set (A→0, B→1, C→2).");
+            }
+            // else: keep the same mapping — don't call ShuffleDestinations or ApplyDestinationMapping
+        }
+        else
+        {
+            // Phase 2 (or no curriculum): shuffle as normal
+            if (_useCurriculum && EpisodeIndex == _curriculumPhase1Episodes + 1)
+            {
+                Debug.Log($"[EnvironmentManager] Curriculum Phase 2 started at episode {EpisodeIndex}. Shuffling destinations each episode.");
+            }
+            ShuffleDestinations();
+        }
 
         OnEpisodeReset?.Invoke();
 
@@ -176,7 +227,7 @@ public class EnvironmentManager : MonoBehaviour
     // ── Internal ────────────────────────────────────────────────────
     private void EndEpisode()
     {
-       
+
         OnEpisodeEnded?.Invoke();
         ResetEpisode();
     }
@@ -196,6 +247,18 @@ public class EnvironmentManager : MonoBehaviour
         {
             _branchDestinations[i] = perm[i];
             _branchZones[i].SetAcceptedLabel(perm[i]);
+        }
+    }
+
+    /// <summary>
+    /// Apply the current _branchDestinations to the destination zones.
+    /// Used by curriculum Phase 1 to set the fixed mapping without shuffling.
+    /// </summary>
+    private void ApplyDestinationMapping()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            _branchZones[i].SetAcceptedLabel(_branchDestinations[i]);
         }
     }
 }

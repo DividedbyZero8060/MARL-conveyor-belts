@@ -1,4 +1,4 @@
-using Unity.MLAgents.Sensors;
+ï»¿using Unity.MLAgents.Sensors;
 using UnityEngine;
 
 /// <summary>
@@ -9,17 +9,17 @@ using UnityEngine;
 ///   [1]      cooldown
 ///   [2]      belt_speed
 ///   [3..6)   dest_mapping one-hot (THIS branch)
-///   [6..31)  5 package slots × 5 floats
-///   [31..35) peer features: 2 × gate_state + 2 × nearest_package_distance
-///   [35..38) 3 × branch congestion
+///   [6..31)  5 package slots Ã— 5 floats
+///   [31..35) peer features: 2 Ã— gate_state + 2 Ã— nearest_package_distance
+///   [35..38) 3 Ã— branch congestion
 ///
 /// Partial observability (34 floats):
 ///   [0]      gate_state
 ///   [1]      cooldown
 ///   [2]      belt_speed
 ///   [3..6)   dest_mapping one-hot (THIS branch)
-///   [6..31)  5 package slots × 5 floats
-///   [31..34) 3 × branch congestion
+///   [6..31)  5 package slots Ã— 5 floats
+///   [31..34) 3 Ã— branch congestion
 ///
 /// Index constants live in ObsIndices.cs. Do NOT hardcode offsets here.
 /// </summary>
@@ -71,7 +71,7 @@ public partial class SortingAgent
         SetCachedNearestPackageDistance(ctx.NearestPackageDistanceOut);
 
         // --------------------------------------------------------------
-        // Semantic asserts (editor only — fires on any malformed float)
+        // Semantic asserts (editor only â€” fires on any malformed float)
         // --------------------------------------------------------------
 #if UNITY_EDITOR
         // Gate state must be 0, 0.5, or 1
@@ -123,5 +123,9 @@ public partial class SortingAgent
         {
             sensor.AddObservation(_obsBuffer[i]);
         }
+
+        
+
+
     }
 }
