@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 using UnityEngine;
 
@@ -10,7 +10,7 @@ using UnityEngine;
     ///   +1 on OnTriggerEnter when a Package enters the branch-entry trigger volume.
     ///   -1 when the paired DestinationZone fires OnCorrectSort or OnIncorrectSort
     ///      for a package we are currently tracking.
-    ///   NO OnTriggerExit decrement � packages physically leave the small entry
+    ///   NO OnTriggerExit decrement — packages physically leave the small entry
     ///      trigger while still riding the branch belt, which would undercount.
     ///   All counters zeroed on EnvironmentManager.OnEpisodeReset.
     ///
@@ -31,9 +31,24 @@ using UnityEngine;
         [Tooltip("Maximum expected packages on this branch. Used to normalise congestion to [0,1].")]
         [SerializeField] private int _maxCapacity = 10;
 
-        // Currently tracked package instances. HashSet for O(1) add/remove and duplicate-safety
-        // in case a package re-enters the trigger due to physics jitter.
-        private readonly HashSet<Package> _trackedPackages = new HashSet<Package>();
+    [Header("Diagnostics")]
+    [Tooltip("Log the per-episode enters/leaves/count reconciliation at every " +
+                 "episode reset. Useful while debugging the congestion observation, " +
+                 "noisy during long training runs (3 branches × ~N episodes = lots of lines). " +
+                 "Warnings on a real MISMATCH always fire regardless of this toggle.")]
+    [SerializeField] private bool _logReconciliationEveryReset = false;
+
+    // Currently tracked package instances. HashSet for O(1) add/remove and duplicate-safety
+    // in case a package re-enters the trigger due to physics jitter.
+    private readonly HashSet<Package> _trackedPackages = new HashSet<Package>();
+
+        // ── Diagnostics (Step 16 congestion-leak check) ─────────────────
+        // Counts *unique* increment/decrement events per episode. A unique
+        // enter is a HashSet.Add that returned true (new package). A unique
+        // leave is a HashSet.Remove that returned true (was present). Reset
+        // to zero inside HandleEpisodeReset after the reconciliation log.
+        private int _enterEvents;
+        private int _leaveEvents;
 
         /// <summary>Branch index this tracker belongs to (0..2).</summary>
         public int BranchIndex => _branchIndex;
@@ -41,8 +56,25 @@ using UnityEngine;
         /// <summary>Raw count of packages currently on this branch.</summary>
         public int Count => _trackedPackages.Count;
 
-        /// <summary>Congestion normalised to [0, 1] for the observation vector.</summary>
-        public float NormalisedCongestion
+        /// <summary>Cumulative +1 increments this episode (HashSet.Add true-returns).</summary>
+        public int EnterEvents => _enterEvents;
+
+        /// <summary>Cumulative -1 decrements this episode (HashSet.Remove true-returns).</summary>
+        public int LeaveEvents => _leaveEvents;
+
+
+    /// <summary>
+    /// Read-only view of the currently-tracked packages on this branch.
+    /// Used by RewardDistributor's potential-based shaping to compute the
+    /// routing potential Φ(s). DO NOT mutate the returned collection.
+    /// Iteration is main-thread-safe: HandleEpisodeReset clears the set on
+    /// the main thread, and event-driven Add/Remove happens on the same
+    /// thread as FixedUpdate callers.
+    /// </summary>
+    public IReadOnlyCollection<Package> TrackedPackages => _trackedPackages;
+
+    /// <summary>Congestion normalised to [0, 1] for the observation vector.</summary>
+    public float NormalisedCongestion
         {
             get
             {
@@ -54,7 +86,7 @@ using UnityEngine;
 
         private void Awake()
         {
-            // Enforce trigger mode � workflow Step 08 requires trigger, not solid collider.
+            // Enforce trigger mode — workflow Step 08 requires trigger, not solid collider.
             BoxCollider box = GetComponent<BoxCollider>();
             if (!box.isTrigger)
             {
@@ -110,9 +142,12 @@ using UnityEngine;
             Package pkg = other.GetComponentInParent<Package>();
             if (pkg == null) return;
 
-            // HashSet.Add returns false if already present � prevents double-count
+            // HashSet.Add returns false if already present — prevents double-count
             // from physics re-triggers at the trigger boundary.
-            _trackedPackages.Add(pkg);
+            if (_trackedPackages.Add(pkg))
+            {
+                _enterEvents++;
+            }
         }
 
         /// <summary>
@@ -123,17 +158,49 @@ using UnityEngine;
         private void HandlePackageLeftBranch(Package pkg)
         {
             if (pkg == null) return;
-            _trackedPackages.Remove(pkg);
+            if (_trackedPackages.Remove(pkg))
+            {
+                _leaveEvents++;
+            }
         }
 
-        private void HandleEpisodeReset()
+    private void HandleEpisodeReset()
+    {
+        // Invariant: enters - leaves should equal the in-set count, but
+        // ReturnAllToPool() can legitimately orphan mid-transit packages
+        // WITHOUT firing zone events (it just deactivates them), so
+        // enters - leaves can exceed count at episode end. That's fine.
+        // The real bug condition is the other direction: if enter-leave
+        // is LESS than count, we have a phantom leave or double-decrement.
+        int expected = _enterEvents - _leaveEvents;
+        int actual = _trackedPackages.Count;
+        bool realBug = expected < actual;
+        string status = (expected == actual) ? "OK"
+            : (realBug ? "MISMATCH (phantom leave)" : "OK (in-flight at timeout)");
+
+        if (_logReconciliationEveryReset)
         {
-        
-        _trackedPackages.Clear();
+            Debug.Log(
+                $"[BranchTracker {_branchIndex}] EpReset: enters={_enterEvents} " +
+                $"leaves={_leaveEvents} count={actual} (expected {expected}) {status}",
+                this);
         }
+        if (realBug)
+        {
+            Debug.LogWarning(
+                $"[BranchTracker {_branchIndex}] reconciliation bug: " +
+                $"enter-leave={expected} < count={actual}. " +
+                "Phantom leave or double-decrement — congestion observation may be corrupt.",
+                this);
+        }
+
+        _trackedPackages.Clear();
+        _enterEvents = 0;
+        _leaveEvents = 0;
+    }
 
 #if UNITY_EDITOR
-        private void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected()
         {
             BoxCollider box = GetComponent<BoxCollider>();
             if (box == null) return;

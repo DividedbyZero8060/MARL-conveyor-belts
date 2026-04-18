@@ -61,6 +61,58 @@ public class RewardDistributor : MonoBehaviour, IEventCounter
              "detect commit-zone triggers. Leave empty if _useIntentShaping is false.")]
     [SerializeField] private DiverterGate[] _gates = new DiverterGate[0];
 
+    [Header("Reward Mode")]
+    [Tooltip("Extra penalty applied ONLY to the acting agent on incorrect sorts. " +
+         "Breaks the fire-on-everything attractor by making wrong-firing costlier " +
+         "than not-firing, while keeping correct-firing rewarding.")]
+    [SerializeField] private bool _useInterceptionPenalty = false;
+
+    [Tooltip("Magnitude of the extra penalty to the acting agent on incorrect sort. " +
+             "Added on top of the normal equal-split reward. Keep small (0.05-0.15).")]
+    [SerializeField] private float _interceptionPenaltyMagnitude = 0.1f;
+
+    [Header("Responsibility-Attributed Miss")]
+    [Tooltip("When a package is missed, the agent whose branch is assigned to that package's " +
+             "destination pays the majority of the team miss penalty (-1.334), while the other " +
+             "two agents pay a small share (-0.333 each). Team total remains -2.0 (sacred). " +
+             "Mechanism: flips the lazy-agent inequality (fire-wrong -0.5 vs don't-fire-responsible " +
+             "-1.334) so abstention-when-responsible is strongly penalised. Preserves the baseline " +
+             "fire-when-wrong penalty (-0.5) so gradient dynamics teach selectivity before restraint. " +
+             "Compatible with _useCounterfactualCredit (orthogonal — acts on miss events only).")]
+    [SerializeField] private bool _useResponsibilityAttributedMiss = false;
+
+    [Tooltip("Responsible agent's share of the team miss penalty. Default -1.334 = -2.0 × 2/3. " +
+             "Combined with -0.333 × 2 non-responsible shares, sums to exactly -2.0 (sacred team total).")]
+    [SerializeField] private float _responsibleMissShare = -1.334f;
+
+    [Tooltip("Each non-responsible agent's share of the team miss penalty. Default -0.333 = -2.0 × 1/6. " +
+             "Two non-responsible agents × -0.333 + one responsible × -1.334 = -2.0 exactly.")]
+    [SerializeField] private float _nonResponsibleMissShare = -0.333f;
+
+    [Header("Potential-Based Reward Shaping (Ng et al. 1999)")]
+    [Tooltip("Enable policy-invariant dense reward shaping based on a routing potential. " +
+             "Φ(s) = Σ_branch Σ_package_on_branch[+1 if matching destination else -1]. " +
+             "F(s,s') = α·(γΦ(s') - Φ(s)) is added to the team reward each FixedUpdate. " +
+             "Provides immediate commit-time feedback without changing the optimal policy. " +
+             "Recommended: leave _useIntentShaping OFF when this is ON — they overlap.")]
+    [SerializeField] private bool _usePotentialShaping = false;
+
+    [Tooltip("Discount factor used inside the shaping term. MUST match your training " +
+             "config's gamma (typically 0.99 per SortingAgent.yaml). Desync breaks the " +
+             "policy-invariance guarantee.")]
+    [SerializeField] private float _potentialGamma = 0.99f;
+
+    [Tooltip("Scaling coefficient α on the shaping term. 0.1 gives commit-time feedback " +
+             "of ±0.099 per team event, ~10% of the sparse correct-sort reward scale. " +
+             "Strong enough to break gradient indifference, weak enough to let sparse " +
+             "signal dominate long-horizon behaviour. Tune in [0.05, 0.20].")]
+    [SerializeField] private float _potentialShapingCoefficient = 0.1f;
+
+    [Tooltip("All three BranchTrackers in branch-index order (Branch 0, 1, 2). " +
+             "Required when _usePotentialShaping is true. The same BranchTrackers " +
+             "that feed the congestion observation.")]
+    [SerializeField] private BranchTracker[] _branchTrackersForPotential = new BranchTracker[3];
+
     // ================================================================
     // Reward constants
     // ================================================================
@@ -130,7 +182,46 @@ public class RewardDistributor : MonoBehaviour, IEventCounter
         // Log mode at startup for clarity
         string mode = _useCounterfactualCredit ? "COUNTERFACTUAL CREDIT" : "EQUAL SPLIT";
         string intent = _useIntentShaping ? $"INTENT SHAPING (±{_intentShapingMagnitude})" : "NO INTENT SHAPING";
-        Debug.Log($"[RewardDistributor] Mode: {mode}, {intent}");
+        string pbrs = _usePotentialShaping
+            ? $"PBRS (α={_potentialShapingCoefficient}, γ={_potentialGamma})"
+            : "NO PBRS";
+        string respMiss = _useResponsibilityAttributedMiss
+            ? $"RESPONSIBILITY MISS (resp={_responsibleMissShare}, others={_nonResponsibleMissShare})"
+            : "EQUAL MISS";
+        Debug.Log($"[RewardDistributor] Mode: {mode}, {intent}, {pbrs}, {respMiss}");
+
+        if (_useResponsibilityAttributedMiss)
+        {
+            // Validate the team-total invariant: 1 × resp + 2 × non-resp should equal -2.0.
+            float teamTotal = _responsibleMissShare + 2f * _nonResponsibleMissShare;
+            Debug.Assert(Mathf.Abs(teamTotal - TEAM_MISSED) < 0.01f,
+                $"[RewardDistributor] Responsibility-attributed miss shares violate team total: " +
+                $"resp ({_responsibleMissShare}) + 2 × non-resp ({_nonResponsibleMissShare}) " +
+                $"= {teamTotal}, expected {TEAM_MISSED}. Adjust _responsibleMissShare or _nonResponsibleMissShare.", this);
+        }
+
+        if (_usePotentialShaping)
+        {
+            Debug.Assert(_branchTrackersForPotential != null && _branchTrackersForPotential.Length == 3,
+                "[RewardDistributor] PBRS enabled but _branchTrackersForPotential must have exactly 3 entries.", this);
+            for (int i = 0; i < _branchTrackersForPotential.Length; i++)
+            {
+                Debug.Assert(_branchTrackersForPotential[i] != null,
+                    $"[RewardDistributor] PBRS enabled but _branchTrackersForPotential[{i}] is null.", this);
+            }
+            Debug.Assert(_potentialGamma > 0f && _potentialGamma <= 1f,
+                $"[RewardDistributor] _potentialGamma out of (0,1]: {_potentialGamma}", this);
+            Debug.Assert(_potentialShapingCoefficient >= 0f,
+                $"[RewardDistributor] _potentialShapingCoefficient must be >= 0: {_potentialShapingCoefficient}", this);
+
+            if (_useIntentShaping)
+            {
+                Debug.LogWarning(
+                    "[RewardDistributor] Both _useIntentShaping and _usePotentialShaping are enabled. " +
+                    "These overlap conceptually (both give commit-time signal). Recommend disabling " +
+                    "_useIntentShaping for the PBRS experiment so the effect can be attributed cleanly.");
+            }
+        }
     }
 
     private void Start()
@@ -271,13 +362,98 @@ public class RewardDistributor : MonoBehaviour, IEventCounter
             DistributeWithCredit(TEAM_INCORRECT, CF_INCORRECT_ACTOR, CF_INCORRECT_OTHER, branchIndex);
         else
             DistributeEqual(EQUAL_INCORRECT, TEAM_INCORRECT);
+
+        // Extra per-agent penalty for the acting agent only.
+        // Does NOT go through AddGroupReward — only affects the individual agent's
+        // AddReward channel. Keeps MA-POCA's group critic unchanged.
+        if (_useInterceptionPenalty && branchIndex >= 0 && branchIndex < _agents.Length)
+        {
+            if (_agents[branchIndex] != null)
+                _agents[branchIndex].AddReward(-_interceptionPenaltyMagnitude);
+        }
     }
 
     private void HandleMissedPackage(Package pkg)
     {
         MissedPackageEvents++;
-        // Missed packages have no acting agent — always equal split.
-        DistributeEqual(EQUAL_MISSED, TEAM_MISSED);
+
+        if (_useResponsibilityAttributedMiss && pkg != null)
+        {
+            DistributeMissWithResponsibility(pkg.DestinationLabel);
+        }
+        else
+        {
+            // Baseline: equal split across all agents.
+            DistributeEqual(EQUAL_MISSED, TEAM_MISSED);
+        }
+    }
+
+    /// <summary>
+    /// Distribute the team miss penalty asymmetrically: the agent whose branch
+    /// is currently assigned to the missed package's destination label pays
+    /// _responsibleMissShare; the other two pay _nonResponsibleMissShare each.
+    ///
+    /// Team-channel (AddGroupReward) sees the full TEAM_MISSED (-2.0), unchanged
+    /// from baseline — so MA-POCA's cooperative critic is untouched.
+    ///
+    /// Responsibility lookup reads EnvironmentManager.GetDestinationForBranch
+    /// dynamically each call, so this works correctly under both curriculum
+    /// (fixed mapping) and per-episode shuffling.
+    /// </summary>
+    private void DistributeMissWithResponsibility(DestinationLabel missedLabel)
+    {
+        // Team channel (unchanged from baseline)
+        if (EnvironmentManager.Instance != null
+            && EnvironmentManager.Instance._agentGroup != null
+            && EnvironmentManager.Instance._agentGroup.Group != null)
+        {
+            EnvironmentManager.Instance._agentGroup.Group.AddGroupReward(TEAM_MISSED);
+        }
+
+        // Identify the responsible branch index by reading the current
+        // destination mapping. Returns -1 if no branch is currently assigned
+        // to this label (shouldn't happen in normal operation, but we degrade
+        // gracefully to equal split in that case).
+        int responsibleIdx = FindResponsibleBranchIndex(missedLabel);
+
+        if (responsibleIdx < 0 || responsibleIdx >= _agents.Length)
+        {
+            // Fallback: no agent is responsible for this destination (misconfig).
+            // Fall back to equal split so we don't silently lose the penalty.
+            for (int i = 0; i < _agents.Length; i++)
+            {
+                if (_agents[i] != null)
+                    _agents[i].AddReward(EQUAL_MISSED);
+            }
+            Debug.LogWarning(
+                $"[RewardDistributor] Missed package with destination {missedLabel} " +
+                "has no responsible branch in current mapping. Falling back to equal split.", this);
+            return;
+        }
+
+        // Selfish distribution
+        for (int i = 0; i < _agents.Length; i++)
+        {
+            if (_agents[i] == null) continue;
+            float share = (i == responsibleIdx) ? _responsibleMissShare : _nonResponsibleMissShare;
+            _agents[i].AddReward(share);
+        }
+    }
+
+    /// <summary>
+    /// Returns the branch index currently assigned to the given destination label,
+    /// or -1 if no branch matches. Queries EnvironmentManager dynamically so
+    /// shuffling and curriculum modes both work.
+    /// </summary>
+    private int FindResponsibleBranchIndex(DestinationLabel label)
+    {
+        if (EnvironmentManager.Instance == null) return -1;
+        for (int branchIdx = 0; branchIdx < 3; branchIdx++)
+        {
+            if (EnvironmentManager.Instance.GetDestinationForBranch(branchIdx) == label)
+                return branchIdx;
+        }
+        return -1;
     }
 
     /// <summary>
@@ -377,5 +553,117 @@ public class RewardDistributor : MonoBehaviour, IEventCounter
         IntentIncorrectEvents = 0;
         for (int i = 0; i < _correctSortsByBranch.Length; i++)
             _correctSortsByBranch[i] = 0;
+
+        // PBRS: re-anchor the potential to 0 at episode start.
+        // BranchTrackers zero their HashSets on this same event, so Φ==0 naturally
+        // after this frame, but we zero _previousPotential explicitly to avoid any
+        // one-frame stale-value issues during the reset transition.
+        _previousPotential = 0f;
+        _episodeShapingSum = 0f;
+        _episodePhiSum = 0f;
+        _episodePbrsSamples = 0;
     }
+
+    // =================================================================
+    // Potential-Based Reward Shaping (Ng, Harada & Russell 1999)
+    // =================================================================
+    //
+    // Φ(s) = Σ_branch Σ_package_on_branch [ +1 if matching dest, -1 otherwise ]
+    // F(s,s') = α · ( γ · Φ(s') - Φ(s) )
+    //
+    // Distributed as team reward: both SimpleMultiAgentGroup.AddGroupReward
+    // (for MA-POCA's cooperative critic) and per-agent AddReward (for per-agent
+    // readouts in MADDPG/DQN). Mirrors the existing sparse-reward distribution
+    // pattern so PBRS stacks cleanly on top without breaking any toggle.
+
+    private float _previousPotential = 0f;
+
+    // Per-episode PBRS telemetry — exposed via the public properties below
+    // so DebugOverlay (or any other StatsRecorder bridge) can log to TensorBoard.
+    private float _episodeShapingSum = 0f;   // sum of F values delivered this episode (team units)
+    private float _episodePhiSum = 0f;       // sum of Φ(s) samples this episode
+    private int _episodePbrsSamples = 0;   // number of FixedUpdate ticks this episode
+
+    /// <summary>Mean routing potential Φ over the current episode so far. 0 when PBRS disabled.</summary>
+    public float MeanPotentialThisEpisode =>
+        _episodePbrsSamples > 0 ? _episodePhiSum / _episodePbrsSamples : 0f;
+
+    /// <summary>
+    /// Cumulative team shaping reward (ΣF) delivered this episode so far.
+    /// Should be close to zero over a complete episode if the telescope closes
+    /// (i.e., all packages cleared by episode end). Large residuals indicate
+    /// the terminal-correction approximation is biting.
+    /// </summary>
+    public float ShapingRewardSumThisEpisode => _episodeShapingSum;
+
+    private void FixedUpdate()
+    {
+        if (!_usePotentialShaping) return;
+
+        float currentPotential = ComputeRoutingPotential();
+        float shapingTeamReward =
+            _potentialShapingCoefficient *
+            (_potentialGamma * currentPotential - _previousPotential);
+
+        DistributeShaping(shapingTeamReward);
+
+        _previousPotential = currentPotential;
+
+        _episodeShapingSum += shapingTeamReward;
+        _episodePhiSum += currentPotential;
+        _episodePbrsSamples++;
+    }
+
+    /// <summary>
+    /// Computes Φ(s) by iterating every BranchTracker and comparing each tracked
+    /// package's destination label to the branch's currently-accepted label.
+    /// O(total packages on branches). With pool size 40 and 3 branches, worst case
+    /// is 40 comparisons per tick — negligible at 50Hz.
+    /// </summary>
+    private float ComputeRoutingPotential()
+    {
+        if (EnvironmentManager.Instance == null) return 0f;
+
+        float phi = 0f;
+        for (int b = 0; b < _branchTrackersForPotential.Length; b++)
+        {
+            BranchTracker tracker = _branchTrackersForPotential[b];
+            if (tracker == null) continue;
+
+            DestinationLabel branchDest = EnvironmentManager.Instance.GetDestinationForBranch(b);
+
+            foreach (Package pkg in tracker.TrackedPackages)
+            {
+                if (pkg == null || !pkg.gameObject.activeInHierarchy) continue;
+                phi += (pkg.DestinationLabel == branchDest) ? +1f : -1f;
+            }
+        }
+        return phi;
+    }
+
+    /// <summary>
+    /// Distribute the shaping reward identically to the sparse equal-split path:
+    /// AddGroupReward(team) + per-agent AddReward(team / N). Both MA-POCA and
+    /// MADDPG pick up the right channel.
+    /// </summary>
+    private void DistributeShaping(float teamShapingReward)
+    {
+        if (Mathf.Abs(teamShapingReward) < 1e-9f) return;
+
+        float perAgent = teamShapingReward / _agents.Length;
+
+        if (EnvironmentManager.Instance != null
+            && EnvironmentManager.Instance._agentGroup != null
+            && EnvironmentManager.Instance._agentGroup.Group != null)
+        {
+            EnvironmentManager.Instance._agentGroup.Group.AddGroupReward(teamShapingReward);
+        }
+
+        for (int i = 0; i < _agents.Length; i++)
+        {
+            if (_agents[i] != null)
+                _agents[i].AddReward(perAgent);
+        }
+    }
+
 }

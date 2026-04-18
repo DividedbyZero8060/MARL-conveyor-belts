@@ -20,8 +20,17 @@ public class PackageSpawner : MonoBehaviour
     [SerializeField] private int _poolSize = 40;
 
     [Header("Package Types")]
-    [Tooltip("Assign all 3 PackageTypeSO assets here.")]
+    [Tooltip("Assign PackageTypeSO assets here. Use 2 entries for supervisor's Level 1 (alternation), 3 entries for full task.")]
     [SerializeField] private PackageTypeSO[] _packageTypes;
+
+    [Tooltip("Level 1 (supervisor): cycle through _packageTypes in order (1-1 alternation) instead of uniform random. " +
+             "Off = current random behaviour. Timing (Poisson) is unchanged either way.")]
+    [SerializeField] private bool _useDeterministicAlternation = false;
+
+    // Round-robin cursor used only when _useDeterministicAlternation == true.
+    // Advanced after every successful spawn and reset to 0 on episode reset
+    // so each episode starts from _packageTypes[0], keeping runs reproducible.
+    private int _alternationIndex = 0;
 
     [Header("References")]
     [Tooltip("Empty transform marking the spawn position.")]
@@ -42,8 +51,11 @@ public class PackageSpawner : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Assert(_packageTypes != null && _packageTypes.Length == 3,
-            "[PackageSpawner] Exactly 3 PackageTypeSO assets required.");
+        // Relaxed from == 3 to >= 1 so supervisor's Level 1 (2 types) works.
+        // Full task still uses 3; Level 1 uses 2; the Debug.Assert just guards
+        // against an empty inspector array.
+        Debug.Assert(_packageTypes != null && _packageTypes.Length >= 1,
+            "[PackageSpawner] _packageTypes must have at least 1 entry (typical: 2 for Level 1, 3 for full task).");
         Debug.Assert(_spawnPoint != null,
             "[PackageSpawner] _spawnPoint not assigned.");
         Debug.Assert(_poolSize > 0,
@@ -126,8 +138,10 @@ public class PackageSpawner : MonoBehaviour
         }
 
         TotalSpawned = 0;
+        // Re-anchor the alternation cursor BEFORE sampling the next interval,
+        // in case SamplePoissonInterval is ever extended to read cursor state.
+        _alternationIndex = 0;
         _nextSpawnTime = Time.fixedTime + SamplePoissonInterval();
-        
     }
 
     // ── Spawning ────────────────────────────────────────────────────
@@ -138,8 +152,17 @@ public class PackageSpawner : MonoBehaviour
 
         
 
-        // Random type
-        PackageTypeSO type = _packageTypes[Random.Range(0, _packageTypes.Length)];
+        // Type selection: deterministic round-robin (supervisor Level 1) or uniform random (default).
+        PackageTypeSO type;
+        if (_useDeterministicAlternation)
+        {
+            type = _packageTypes[_alternationIndex];
+            _alternationIndex = (_alternationIndex + 1) % _packageTypes.Length;
+        }
+        else
+        {
+            type = _packageTypes[Random.Range(0, _packageTypes.Length)];
+        }
         pkg.gameObject.SetActive(true);
 
         // Position: spawn point + random lateral offset on local X axis
