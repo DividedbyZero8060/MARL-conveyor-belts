@@ -49,9 +49,19 @@ public partial class SortingAgent : Agent
     [Tooltip("World-space forward direction along the trunk belt. Passed to PackageDetector at Initialize.")]
     [SerializeField] private Vector3 _beltForward = Vector3.forward;
 
+    [Header("Communication (Step 17)")]
+    [Tooltip("Number of message floats this agent emits and reads per peer. " +
+             "Must match CommChannel._bandwidth and Python --comm-bandwidth. " +
+             "Valid: 0 (no comm), 1, 3. When 0, all comm code paths are skipped " +
+             "and the observation/action layout matches the pre-comm baseline.")]
+    [SerializeField] private int _commBandwidth = 0;
+
+    /// <summary>Communication bandwidth (0, 1, or 3). Exposed for CommChannel and observation builder.</summary>
+    public int CommBandwidth => _commBandwidth;
+
     // Live set of packages currently inside this agent's detector trigger volume.
     // Maintained by OnTriggerEnter / OnTriggerExit on the agent GameObject.
-    
+
     private readonly List<Package> _overlappingPackages = new List<Package>(32);
 
     // Cached for peer queries — recomputed at the end of each CollectObservations
@@ -141,6 +151,17 @@ public partial class SortingAgent : Agent
 
         // detect discrete vs continuous action mode from BehaviorParameters.
         DetectActionMode();
+
+        // Validate comm bandwidth against CommChannel if present.
+        // Validate comm bandwidth. CommChannel.Instance may be null here if
+        // CommChannel.Awake hasn't run yet (Unity lifecycle race between
+        // Agent.OnEnable and MonoBehaviour.Awake). Defer the singleton
+        // cross-check to Start() which runs after all Awakes.
+        if (_commBandwidth > 0)
+        {
+            Debug.Assert(_commBandwidth == 1 || _commBandwidth == 3,
+                $"[SortingAgent {_branchIndex}] _commBandwidth must be 0, 1, or 3; got {_commBandwidth}.", this);
+        }
     }
 
     private void Start()
@@ -152,6 +173,27 @@ public partial class SortingAgent : Agent
         else
         {
             Debug.LogError($"[SortingAgent {_branchIndex}] EnvironmentManager.Instance is null in Start!", this);
+        }
+
+        // Comm singleton cross-check. Start() runs after all Awakes, so
+        // CommChannel.Instance is guaranteed to be set by now if the
+        // component exists in the scene.
+        if (_commBandwidth > 0)
+        {
+            if (CommChannel.Instance == null)
+            {
+                Debug.LogError(
+                    $"[SortingAgent {_branchIndex}] _commBandwidth={_commBandwidth} but " +
+                    "CommChannel.Instance is null in Start. Add a CommChannel GameObject " +
+                    "to the scene or set _commBandwidth to 0.", this);
+            }
+            else if (CommChannel.Instance.Bandwidth != _commBandwidth)
+            {
+                Debug.LogError(
+                    $"[SortingAgent {_branchIndex}] _commBandwidth ({_commBandwidth}) != " +
+                    $"CommChannel.Bandwidth ({CommChannel.Instance.Bandwidth}). " +
+                    "Set them to the same value on both components.", this);
+            }
         }
     }
 

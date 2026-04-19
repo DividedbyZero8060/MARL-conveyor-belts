@@ -98,6 +98,10 @@ public partial class SortingAgent
         }
     }
 
+    // Reusable scratch buffer for writing messages to CommChannel.
+    // Sized to max bandwidth (3) to avoid per-step allocation.
+    private readonly float[] _outgoingMessage = new float[3];
+
     public override void OnActionReceived(ActionBuffers actions)
     {
         _decisionCount++;
@@ -105,10 +109,8 @@ public partial class SortingAgent
         {
             case ActionMode.Discrete:
                 {
-                    // Framework has already applied WriteDiscreteActionMask below,
-                    // so action 1 should only arrive when gate is Retracted. We
-                    // still call TryActivateGate() which is idempotent — Activate()
-                    // returns false if not actionable.
+                    // Discrete mode: no comm support. Message channel is a
+                    // continuous-action feature only per workflow spec.
                     int gateAction = actions.DiscreteActions[0];
                     if (gateAction == 1)
                     {
@@ -120,9 +122,7 @@ public partial class SortingAgent
 
             case ActionMode.Continuous:
                 {
-                    // MADDPG: Python forces masked_action[0] = 0.0 when gate is
-                    // not retracted, but we defend anyway in case of threshold
-                    // drift or a raw inference path skipping the mask.
+                    // Continuous mode: action[0] is gate, action[1..1+bandwidth) are messages.
                     float gateAction = actions.ContinuousActions[0];
                     if (gateAction > ContinuousActivationThreshold
                         && _gate != null
@@ -131,13 +131,32 @@ public partial class SortingAgent
                         _activationCount++;
                         TryActivateGate();
                     }
+
+                    // Write message floats to CommChannel. Silent no-op when bandwidth=0.
+                    if (_commBandwidth > 0 && CommChannel.Instance != null)
+                    {
+                        int continuousLen = actions.ContinuousActions.Length;
+                        // Expected layout: continuousLen = 1 + _commBandwidth.
+                        // If fewer floats than expected (misconfig), write zeros for the missing ones.
+                        for (int i = 0; i < _commBandwidth; i++)
+                        {
+                            int srcIdx = 1 + i;  // action index for message float i
+                            _outgoingMessage[i] = (srcIdx < continuousLen)
+                                ? actions.ContinuousActions[srcIdx]
+                                : 0f;
+                        }
+
+                        // Allocate a bandwidth-sized array for WriteMessage (it validates length).
+                        // Slice from the scratch buffer.
+                        float[] msg = new float[_commBandwidth];
+                        System.Array.Copy(_outgoingMessage, msg, _commBandwidth);
+                        CommChannel.Instance.WriteMessage(_branchIndex, msg);
+                    }
                     break;
                 }
 
             case ActionMode.Unknown:
             default:
-                // DetectActionMode already logged an error. Fail silent here
-                // so we don't spam the Console every decision step.
                 break;
         }
     }
@@ -197,6 +216,11 @@ public partial class SortingAgent
             if (continuousOut.Length > 0)
             {
                 continuousOut[0] = wantActivate ? 1f : 0f;
+            }
+            // Heuristic emits zero messages. Fills indices 1..end.
+            for (int i = 1; i < continuousOut.Length; i++)
+            {
+                continuousOut[i] = 0f;
             }
         }
         // Unknown mode: leave buffer at default (zeros).
