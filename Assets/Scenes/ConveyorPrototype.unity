@@ -157,6 +157,7 @@ MonoBehaviour:
   _packageTypes:
   - {fileID: 11400000, guid: aad8db3b7e39bfa4d872f132f2d2d4b3, type: 2}
   - {fileID: 11400000, guid: ee90b9ac4dee557439a2d728a5dbfe57, type: 2}
+  - {fileID: 11400000, guid: b804116d748f87749893e5e909d521b6, type: 2}
   _useDeterministicAlternation: 0
   _spawnPoint: {fileID: 1893572057}
   _minimumInterval: 5
@@ -1434,6 +1435,37 @@ Transform:
   - {fileID: 165184118}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 35, z: 0}
+--- !u!1 &532531128
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 532531129}
+  m_Layer: 0
+  m_Name: CommChannel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &532531129
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 532531128}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &535607133
 GameObject:
   m_ObjectHideFlags: 0
@@ -2622,6 +2654,7 @@ MonoBehaviour:
   - {fileID: 1075217947}
   - {fileID: 1544991375}
   _beltForward: {x: 0, y: 0, z: 1}
+  _commBandwidth: 0
 --- !u!114 &1052898310
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2635,14 +2668,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 34
+    VectorObservationSize: 38
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 0
-      BranchSizes: 02000000
-    VectorActionSize: 02000000
+      m_NumContinuousActions: 1
+      BranchSizes: 
+    VectorActionSize: 01000000
     VectorActionDescriptions: []
-    VectorActionSpaceType: 0
+    VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
@@ -2752,6 +2785,7 @@ MonoBehaviour:
   - {fileID: 1052898309}
   - {fileID: 1544991375}
   _beltForward: {x: 0, y: 0, z: 1}
+  _commBandwidth: 0
 --- !u!114 &1075217948
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2765,14 +2799,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 34
+    VectorObservationSize: 38
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 0
-      BranchSizes: 02000000
-    VectorActionSize: 02000000
+      m_NumContinuousActions: 1
+      BranchSizes: 
+    VectorActionSize: 01000000
     VectorActionDescriptions: []
-    VectorActionSpaceType: 0
+    VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
@@ -3307,7 +3341,7 @@ MonoBehaviour:
   - {fileID: 966596094}
   _fallthroughZone: {fileID: 971486433}
   _packageSpawner: {fileID: 41728468}
-  _partialObservability: 1
+  _partialObservability: 0
   _agentGroup: {fileID: 757305632}
   _useCurriculum: 1
   _curriculumPhase1Episodes: 9999
@@ -3697,6 +3731,7 @@ MonoBehaviour:
   - {fileID: 1075217947}
   - {fileID: 1052898309}
   _beltForward: {x: 0, y: 0, z: 1}
+  _commBandwidth: 0
 --- !u!114 &1544991376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3710,14 +3745,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 34
+    VectorObservationSize: 38
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 0
-      BranchSizes: 02000000
-    VectorActionSize: 02000000
+      m_NumContinuousActions: 1
+      BranchSizes: 
+    VectorActionSize: 01000000
     VectorActionDescriptions: []
-    VectorActionSpaceType: 0
+    VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
@@ -4536,7 +4571,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &2002696927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4550,7 +4585,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetEpisodes: 100
-  _outputPath: results/baseline_updated_test.csv
+  _outputPath: results/eval_matd3_responsibility_curriculumn.csv
   _useHeuristicAutomatic: 0
   _environmentManager: {fileID: 1264870246}
   _agents:
@@ -5250,8 +5285,20 @@ SceneRoots:
   - {fileID: 1163259087}
   - {fileID: 2100779254}
   - {fileID: 1544493517}
+  - {fileID: 1837460984}
+  - {fileID: 1087211198}
+  - {fileID: 966596091}
+  - {fileID: 1264870247}
+  - {fileID: 1831708010}
+  - {fileID: 2002696928}
+  - {fileID: 1075217950}
+  - {fileID: 1052898312}
+  - {fileID: 1544991378}
+  - {fileID: 1756149905}
+  - {fileID: 757305633}
   - {fileID: 1893572057}
   - {fileID: 41728469}
+  - {fileID: 532531129}
   - {fileID: 396064184}
   - {fileID: 2090273506}
   - {fileID: 693208751}
@@ -5266,17 +5313,6 @@ SceneRoots:
   - {fileID: 1865098908}
   - {fileID: 1923427676}
   - {fileID: 2134942361}
-  - {fileID: 1837460984}
-  - {fileID: 1087211198}
-  - {fileID: 966596091}
-  - {fileID: 1264870247}
-  - {fileID: 1831708010}
   - {fileID: 106539649}
-  - {fileID: 757305633}
-  - {fileID: 1756149905}
   - {fileID: 1251174654}
-  - {fileID: 1075217950}
-  - {fileID: 1052898312}
-  - {fileID: 1544991378}
-  - {fileID: 2002696928}
   - {fileID: 1644135915}

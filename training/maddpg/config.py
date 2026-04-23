@@ -46,7 +46,7 @@ class MaddpgConfig:
     # ---- Batch and buffer ----
     batch_size: int = 256
     replay_buffer_capacity: int = 500_000
-    warmup_transitions: int = 10_000   # Min buffer fill before updates begin
+    warmup_transitions: int = 50_000      # was 10_000
 
     # ---- Network architecture ----
     hidden_units: int = 256
@@ -55,11 +55,11 @@ class MaddpgConfig:
     # ---- Exploration (Gaussian noise on actor output) ----
     sigma_start: float = 0.20
     sigma_end: float = 0.05
-    sigma_decay_steps: int = 500_000
+    sigma_decay_steps: int = 1_000_000    # was 500_000
 
     # ---- Training schedule ----
     max_steps: int = 2_000_000
-    update_every_n_steps: int = 4      # Per-step updates after warmup
+    update_every_n_steps: int = 3      # Per-step updates after warmup
 
     # ---- Logging cadence (in environment steps) ----
     summary_freq: int = 5_000
